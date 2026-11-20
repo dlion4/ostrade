@@ -271,3 +271,53 @@
   .page-dash-markets .os-candle, .page-dash-markets .os-mk-drawer, .page-dash-markets .os-mk-drawer-layer { animation: none; }
   .page-dash-markets .os-wl-card:hover, .page-dash-markets .os-quote-cell:hover { transform: none; }
 }
+
+/* ── Markets page tabs ───────────────────────────────────── */
+.page-dash-markets .os-mk-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--os-hairline);
+  border-radius: 12px;
+  background: var(--os-surface-1);
+}
+.page-dash-markets .os-mk-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--os-text-2);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.page-dash-markets .os-mk-tabs button svg {
+  flex: none;
+}
+.page-dash-markets .os-mk-tabs button[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--os-brand-ink) 32%, var(--os-hairline));
+  background: color-mix(in srgb, var(--os-brand-ink) 10%, var(--os-surface-1));
+  color: var(--os-brand-ink);
+}
+.page-dash-markets .os-mk-tabs button:hover:not([aria-selected="true"]) {
+  background: var(--os-surface-2);
+}
+.page-dash-markets .os-mk-tabs button:focus-visible {
+  outline: 2px solid var(--os-brand-ink);
+  outline-offset: 2px;
+}
+.page-dash-markets .os-mk-tabpanel[hidden] {
+  display: none;
+}
+@media (max-width: 575px) {
+  .page-dash-markets .os-mk-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

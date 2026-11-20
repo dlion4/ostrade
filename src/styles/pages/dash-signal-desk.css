@@ -1511,49 +1511,6 @@
 .page-dash-signal-desk .os-receipt-stream .os-status {
   margin-left: auto;
 }
-.page-dash-signal-desk .os-performance {
-  overflow: hidden;
-  padding: 18px 0 0;
-  margin-bottom: 18px;
-}
-.page-dash-signal-desk .os-performance > .os-panel-title,
-.page-dash-signal-desk .os-performance > .os-panel-desc {
-  padding: 0 20px;
-}
-.page-dash-signal-desk .os-performance .os-bottom-link {
-  margin: 10px 20px;
-}
-.page-dash-signal-desk .os-sort-control {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--sd-muted);
-}
-.page-dash-signal-desk .os-sort-control select {
-  font-size: 11px;
-  background: transparent;
-  color: inherit;
-  border: 0;
-}
-.page-dash-signal-desk .os-tiny-button {
-  min-height: 26px;
-  font-size: 10px;
-  padding: 0 8px;
-}
-.page-dash-signal-desk .os-win {
-  display: inline-block;
-  width: 32px;
-  height: 4px;
-  background: var(--sd-mint);
-  border-radius: 2px;
-  vertical-align: middle;
-}
-.page-dash-signal-desk .os-win i {
-  display: block;
-  height: 100%;
-  background: #72a587;
-  border-radius: 2px;
-}
 .page-dash-signal-desk .os-guard-event {
   display: flex;
   gap: 10px;

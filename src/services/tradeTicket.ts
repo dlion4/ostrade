@@ -19,7 +19,6 @@ import {
   getAccounts,
   placeDashboardOrder,
   type BrokerKey,
-  type TradingAccount,
 } from "@/services/dashboard";
 import type { TicketDraft } from "@/services/markets";
 import { latency } from "./_latency";
@@ -95,7 +94,7 @@ const PAYOUT_FACTORS: Record<DerivContractType, number> = {
 
 /** Future REST/WS shape: POST /deriv/proposal. Static snapshot calculation locally. */
 export async function fetchDerivProposal(
-  input: DerivProposalInput
+  input: DerivProposalInput,
 ): Promise<DerivProposalOutput> {
   const sym =
     marketSymbols.find((s) => s.canonical === input.canonical) ??
@@ -144,7 +143,7 @@ export async function fetchDerivProposal(
       note: "Snapshot proposal preview — live Deriv WebSocket proposal stream binds when backend connects.",
     },
     320,
-    560
+    560,
   );
 }
 
@@ -191,11 +190,28 @@ export interface FanoutTicketResult {
 
 /** Future REST shape: POST /orders/fanout (BullMQ parallel submission w/ idempotency key). */
 export async function submitFanoutTicket(
-  input: FanoutTicketInput
+  input: FanoutTicketInput,
+  onLegSettled?: (result: TicketReceiptLeg) => void,
 ): Promise<FanoutTicketResult> {
+  if (!input.legs.length)
+    throw new Error("Choose at least one target account.");
+  // The local account lookup is asynchronous: the ticket is pending before admission.
   const accounts = await getAccounts();
+  const availableAccounts = new Map(
+    accounts.map((account) => [account.id, account]),
+  );
+  if (input.legs.some((leg) => !availableAccounts.has(leg.accountId))) {
+    throw new Error(
+      "A selected account is no longer available. Check your account selection before resubmitting.",
+    );
+  }
+  if (
+    new Set(input.legs.map((leg) => leg.accountId)).size !== input.legs.length
+  ) {
+    throw new Error("Select each target account only once.");
+  }
   const sym: MarketSymbol | undefined = marketSymbols.find(
-    (s) => s.canonical === input.canonical
+    (s) => s.canonical === input.canonical,
   );
 
   const receipts: TicketReceiptLeg[] = [];
@@ -203,11 +219,13 @@ export async function submitFanoutTicket(
   let readyCount = 0;
   let blockedCount = 0;
 
+  const addResult = (result: TicketReceiptLeg) => {
+    receipts.push(result);
+    onLegSettled?.(result);
+  };
+  // Keep admission serial so each leg sees positions and risk state from earlier fills.
   for (const leg of input.legs) {
-    const acc: TradingAccount | undefined = accounts.find(
-      (a) => a.id === leg.accountId
-    );
-    if (!acc) continue;
+    const acc = availableAccounts.get(leg.accountId)!;
 
     const brokerSym = mappedBrokerSymbol(sym, acc) ?? "—";
     const res = await placeDashboardOrder({
@@ -215,6 +233,7 @@ export async function submitFanoutTicket(
       symbol: input.canonical,
       side: input.side,
       size: leg.size,
+      sizeUnit: sym?.volumeUnit,
       entry: leg.entry,
       sl: leg.sl,
       tp: leg.tp,
@@ -226,7 +245,7 @@ export async function submitFanoutTicket(
 
     if (res.mode === "simulated") {
       filledCount += 1;
-      receipts.push({
+      addResult({
         accountId: acc.id,
         accountLabel: acc.label,
         broker: acc.broker,
@@ -234,13 +253,13 @@ export async function submitFanoutTicket(
         brokerSymbol: brokerSym,
         size: leg.size,
         status: "filled",
-        fillPrice: leg.entry.toFixed(sym?.digits??2),
+        fillPrice: leg.entry.toFixed(sym?.digits ?? 2),
         ticketId: res.ref,
         message: `Simulated ${input.orderType} fill recorded to Positions & Records.`,
       });
     } else if (res.mode === "ready") {
       readyCount += 1;
-      receipts.push({
+      addResult({
         accountId: acc.id,
         accountLabel: acc.label,
         broker: acc.broker,
@@ -254,7 +273,7 @@ export async function submitFanoutTicket(
       });
     } else {
       blockedCount += 1;
-      receipts.push({
+      addResult({
         accountId: acc.id,
         accountLabel: acc.label,
         broker: acc.broker,
@@ -275,14 +294,26 @@ export async function submitFanoutTicket(
     `TKT-PREVIEW-${Math.floor(100 + Math.random() * 899)}`;
 
   const summaryParts: string[] = [];
-  if (filledCount > 0) summaryParts.push(`${filledCount} simulated fill${filledCount > 1 ? "s" : ""}`);
-  if (readyCount > 0) summaryParts.push(`${readyCount} backend preview${readyCount > 1 ? "s" : ""}`);
+  if (filledCount > 0)
+    summaryParts.push(
+      `${filledCount} simulated fill${filledCount > 1 ? "s" : ""}`,
+    );
+  if (readyCount > 0)
+    summaryParts.push(
+      `${readyCount} backend preview${readyCount > 1 ? "s" : ""}`,
+    );
   if (blockedCount > 0) summaryParts.push(`${blockedCount} blocked`);
 
+  const timestampEat =
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Nairobi",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date()) + " EAT";
   const newTicket: RecentTicket = {
     id: `tkt-${Date.now()}`,
     ref: ticketRef,
-    timestampEat: "16:42 EAT",
+    timestampEat,
     canonical: input.canonical,
     orderType: input.orderType,
     side: input.side,
@@ -307,7 +338,7 @@ export async function submitFanoutTicket(
 
   return {
     ticketRef,
-    timestampEat: "16:42 EAT",
+    timestampEat,
     receipts,
     filledCount,
     readyCount,

@@ -26,8 +26,19 @@ import {
   type RuleSession,
   type SignalRule,
   type TradingAccount,
+  applyKillSwitch,
 } from "@/services/dashboard";
 import { marketSymbols } from "@/data/markets";
+import {
+  deskNow,
+  discardSignal,
+  eatTime,
+  getSignals,
+  savePlanSignal,
+  scheduleDeskSignal,
+  updateDeskSignal,
+  type DeskSignal,
+} from "./signalDesk";
 import { latency } from "./_latency";
 import type { SourceKey } from "@/data/signalDesk";
 
@@ -480,3 +491,353 @@ export function auditToCsv(events: AutomationAudit[]): string {
 }
 
 export const AUTOMATION_MAX_RULES = MAX_SIGNAL_RULES;
+
+/* ══ Redesigned T-5 page model: saved signals, scheduling, global rules ══ */
+
+export type { DeskSignal };
+export { eatTime };
+
+/* ── Trading rules: global, apply to every automated trade ── */
+
+export interface TradingRules {
+  /** Cap on the size of one automated trade, in lots. */
+  maxLotsPerTrade: number;
+  /** Cap on the estimated margin one automated trade may tie up, in USD. */
+  maxAmountPerTrade: number;
+  /** Cap on how many automated trades may be booked per workspace day. */
+  maxAutomatedPerDay: number;
+  /** Auto-pause the workspace when today's realized Paper loss reaches this %. */
+  autoPauseDailyLossPct: number;
+}
+
+export const tradingRuleBounds = {
+  maxLotsPerTrade: [0.01, 100],
+  maxAmountPerTrade: [10, 100_000],
+  maxAutomatedPerDay: [1, 50],
+  autoPauseDailyLossPct: [1, 50],
+} as const;
+
+export const defaultTradingRules: TradingRules = {
+  maxLotsPerTrade: 2,
+  maxAmountPerTrade: 500,
+  maxAutomatedPerDay: 8,
+  autoPauseDailyLossPct: 5,
+};
+
+const RULES_KEY = "os-trading-rules-v1";
+
+let rulesStore: TradingRules = { ...defaultTradingRules, ...readStoredRules() };
+
+function readStoredRules(): Partial<TradingRules> {
+  try {
+    const raw = globalThis.localStorage?.getItem(RULES_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return {};
+    return parsed as Partial<TradingRules>;
+  } catch {
+    return {};
+  }
+}
+
+function clampRule(key: keyof TradingRules, value: unknown): number {
+  const [min, max] = tradingRuleBounds[key];
+  const num = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(num) || num < min || num > max)
+    throw new Error(
+      `${ruleLabels[key]} must be between ${min} and ${max}.`,
+    );
+  return key === "maxLotsPerTrade" ? Math.round(num * 100) / 100 : Math.round(num * 100) / 100;
+}
+
+export const ruleLabels: Record<keyof TradingRules, string> = {
+  maxLotsPerTrade: "Max lots per trade",
+  maxAmountPerTrade: "Max amount per trade",
+  maxAutomatedPerDay: "Max automated trades per day",
+  autoPauseDailyLossPct: "Auto-pause at daily loss",
+};
+
+export const getTradingRules = (): Promise<TradingRules> =>
+  latency({ ...rulesStore }, 260, 420);
+
+export async function saveTradingRules(next: TradingRules): Promise<TradingRules> {
+  const saved: TradingRules = {
+    maxLotsPerTrade: clampRule("maxLotsPerTrade", next.maxLotsPerTrade),
+    maxAmountPerTrade: clampRule("maxAmountPerTrade", next.maxAmountPerTrade),
+    maxAutomatedPerDay: clampRule("maxAutomatedPerDay", next.maxAutomatedPerDay),
+    autoPauseDailyLossPct: clampRule("autoPauseDailyLossPct", next.autoPauseDailyLossPct),
+  };
+  rulesStore = saved;
+  try {
+    globalThis.localStorage?.setItem(RULES_KEY, JSON.stringify(saved));
+  } catch {
+    /* storage optional in this preview */
+  }
+  pushEvent(
+    "rules",
+    "Trading rules updated",
+    `Lots ≤ ${saved.maxLotsPerTrade} · amount ≤ ${fmtUsd(saved.maxAmountPerTrade)} · ${saved.maxAutomatedPerDay}/day · auto-pause at ${saved.autoPauseDailyLossPct}% loss.`,
+  );
+  return latency({ ...saved }, 300, 460);
+}
+
+/* ── Saved signals: create, edit every figure, discard ───── */
+
+export interface SignalDraft {
+  symbol: string;
+  side: "BUY" | "SELL";
+  entry: number;
+  sl: number;
+  tp: number;
+  size: number;
+}
+
+function validateDraft(draft: SignalDraft) {
+  const symbol = String(draft.symbol ?? "").toUpperCase();
+  if (!marketSymbols.some((s) => s.canonical === symbol))
+    throw new Error("Choose an instrument from the market universe.");
+  if (draft.side !== "BUY" && draft.side !== "SELL")
+    throw new Error("Pick a direction: BUY or SELL.");
+  for (const [label, value] of [
+    ["Entry price", draft.entry],
+    ["Stop loss", draft.sl],
+    ["Take profit", draft.tp],
+  ] as const)
+    if (!Number.isFinite(value) || value <= 0)
+      throw new Error(`${label} must be a positive number.`);
+  if (!Number.isFinite(draft.size) || draft.size < 0.01 || draft.size > 100)
+    throw new Error("Lots must be between 0.01 and 100.");
+  return { ...draft, symbol, size: Math.round(draft.size * 100) / 100 };
+}
+
+export async function createSavedSignal(draft: SignalDraft): Promise<DeskSignal> {
+  const v = validateDraft(draft);
+  const saved = await savePlanSignal({
+    symbol: v.symbol,
+    side: v.side,
+    entry: v.entry,
+    sl: v.sl,
+    targets: [v.tp],
+    size: v.size,
+    source: "paste",
+    kind: "Market",
+    duration: "",
+    confidence: 100,
+    warnings: [],
+  });
+  pushEvent(
+    "signal",
+    `Saved signal ${v.symbol}`,
+    `${v.side} ${v.size} lots @ ${v.entry}, SL ${v.sl} / TP ${v.tp}.`,
+    saved.id,
+  );
+  return saved;
+}
+
+export async function editSavedSignal(id: string, draft: SignalDraft): Promise<DeskSignal> {
+  const v = validateDraft(draft);
+  const saved = await updateDeskSignal(id, {
+    symbol: v.symbol,
+    side: v.side,
+    entry: v.entry,
+    sl: v.sl,
+    tp: v.tp,
+    size: v.size,
+  });
+  pushEvent(
+    "signal",
+    `Edited signal ${v.symbol}`,
+    `Now ${v.side} ${v.size} lots @ ${v.entry}, SL ${v.sl} / TP ${v.tp}.`,
+    id,
+  );
+  return saved;
+}
+
+export async function removeSavedSignal(id: string): Promise<{ id: string }> {
+  const removed = await discardSignal(id);
+  pushEvent("signal", "Signal discarded", `${removed.feed} signal removed from the saved list.`, id);
+  return { id };
+}
+
+/* ── Scheduling: book a saved signal for later, under the rules ── */
+
+let automatedToday = 0;
+let automatedDay = new Date(deskNow()).getUTCDate();
+
+function countAutomatedToday(): number {
+  const day = new Date(deskNow()).getUTCDate();
+  if (day !== automatedDay) {
+    automatedDay = day;
+    automatedToday = 0;
+  }
+  return automatedToday;
+}
+
+/** A future desk-time slot (`YYYY-MM-DDTHH:mm`, EAT wall clock) for the schedule form. */
+export function deskScheduleSlot(offsetMinutes = 30): string {
+  const eat = new Date(deskNow() + offsetMinutes * 60_000 + 3 * 3_600_000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${eat.getUTCFullYear()}-${p(eat.getUTCMonth() + 1)}-${p(eat.getUTCDate())}T${p(eat.getUTCHours())}:${p(eat.getUTCMinutes())}`;
+}
+
+/** Snapshot estimate of the margin one trade would tie up, in USD. */
+export function estimateTradeAmount(
+  symbol: string,
+  size: number,
+  account?: TradingAccount,
+): number {
+  const sym = marketSymbols.find((s) => s.canonical === symbol);
+  if (!sym || !Number.isFinite(size) || size <= 0) return 0;
+  let notional: number;
+  if (sym.volumeUnit === "shares") notional = size * sym.bid;
+  else if (sym.assetClass === "Forex") notional = size * 100_000;
+  else if (sym.canonical === "XAUUSD") notional = size * 100 * sym.bid;
+  else if (sym.assetClass === "Crypto") notional = size * sym.bid;
+  else notional = size * sym.bid * 2;
+  if (account?.broker === "deriv") return Math.round(notional * 100) / 100;
+  const levMatch = account?.leverage.match(/1\s*:\s*(\d+)/);
+  const lev = levMatch ? Number(levMatch[1]) : 100;
+  return Math.round((notional / Math.max(1, lev)) * 100) / 100;
+}
+
+export async function scheduleSavedSignal(
+  id: string,
+  accountId: string,
+  at: string,
+): Promise<Awaited<ReturnType<typeof scheduleDeskSignal>>> {
+  const rules = { ...rulesStore };
+  const signals = await getSignals();
+  const row = signals.find((s) => s.id === id);
+  if (!row) throw new Error("Saved signal not found.");
+  if (!row.order.side || row.order.entry <= 0 || row.order.sl <= 0 || (row.order.targets[0] ?? 0) <= 0)
+    throw new Error("Add an entry, stop loss and take profit before automating this signal.");
+
+  const accounts = await getAccounts();
+  const paper = accounts.filter((a) => a.environment === "paper");
+  const startEquity = paper.reduce((sum, a) => sum + Math.max(a.balance - (a.realizedToday ?? 0), 1), 0);
+  const realized = paper.reduce((sum, a) => sum + (a.realizedToday ?? 0), 0);
+  const dailyLossPct = realized < 0 && startEquity > 0 ? (-realized / startEquity) * 100 : 0;
+  if (dailyLossPct >= rules.autoPauseDailyLossPct) {
+    const paused = await applyKillSwitch(
+      "paused",
+      `Auto-pause rule: today's Paper loss ${dailyLossPct.toFixed(1)}% reached the ${rules.autoPauseDailyLossPct}% limit.`,
+    );
+    pushEvent(
+      "control",
+      "Auto-pause engaged",
+      `Daily Paper loss ${dailyLossPct.toFixed(1)}% reached the ${rules.autoPauseDailyLossPct}% rule. Automation paused.`,
+      paused.ref,
+    );
+    throw new Error(
+      `Automation auto-paused: today's Paper loss (${dailyLossPct.toFixed(1)}%) reached your ${rules.autoPauseDailyLossPct}% rule. Resume from the Trading rules tab.`,
+    );
+  }
+
+  if (row.order.size > rules.maxLotsPerTrade)
+    throw new Error(
+      `This signal is ${row.order.size} lots — your rule caps automated trades at ${rules.maxLotsPerTrade} lots. Edit the signal size first.`,
+    );
+  const account = accounts.find((a) => a.id === accountId);
+  const amount = estimateTradeAmount(row.order.symbol, row.order.size, account);
+  if (amount > rules.maxAmountPerTrade)
+    throw new Error(
+      `This trade would tie up about ${fmtUsd(amount)} margin — your per-trade amount rule caps it at ${fmtUsd(rules.maxAmountPerTrade)}. Reduce the lots.`,
+    );
+  if (countAutomatedToday() >= rules.maxAutomatedPerDay)
+    throw new Error(
+      `You reached the daily automation cap (${rules.maxAutomatedPerDay} trades). Raise the rule or wait for the next workspace day.`,
+    );
+
+  const outcome = await scheduleDeskSignal(id, accountId, at);
+  if (outcome.mode !== "blocked") {
+    automatedToday += 1;
+    pushEvent(
+      "schedule",
+      `Scheduled ${row.order.symbol}`,
+      `${row.order.side} ${row.order.size} lots at ${at.replace("T", " ")} EAT on ${account?.label ?? "the selected account"}. Runs via Trade Scheduler (T-6).`,
+      outcome.ref,
+    );
+  }
+  return outcome;
+}
+
+/* ── Master control: resume, pause, stop-all ─────────────── */
+
+export type AutomationControlMode = "armed" | "paused" | "flattened";
+
+export async function setAutomationControl(mode: AutomationControlMode) {
+  const reason =
+    mode === "armed"
+      ? "Automation re-armed from the Automation page."
+      : mode === "paused"
+        ? "Automation paused from the Automation page."
+        : "Stop-all engaged from the Automation page: close Paper positions and halt automation.";
+  const outcome = await applyKillSwitch(mode, reason);
+  pushEvent("control", outcome.title, outcome.detail, outcome.ref);
+  return outcome;
+}
+
+/* ── Activity: what this page did ────────────────────────── */
+
+export interface AutomationEvent {
+  id: string;
+  at: number;
+  kind: "schedule" | "signal" | "rules" | "control";
+  title: string;
+  detail: string;
+  ref?: string;
+}
+
+const base = deskNow();
+let eventSeq = 0;
+const activityStore: AutomationEvent[] = (
+  [
+    ["control", "Workspace re-armed", "Prior eligible automation restored after a rehearsal pause."],
+    ["schedule", "Scheduled XAUUSD", "BUY 0.5 lots at 16:00 EAT on Paper Main. Runs via Trade Scheduler (T-6).", "OST-2025-00141"],
+    ["schedule", "Scheduled EURUSD", "SELL 0.2 lots at 09:30 EAT on Paper Reserve. Runs via Trade Scheduler (T-6).", "OST-2025-00138"],
+    ["signal", "Edited signal BTCUSDT", "Now BUY 0.05 lots @ 64250, SL 63100 / TP 66800."],
+    ["signal", "Saved signal USDJPY", "SELL 0.3 lots @ 151.20, SL 152.10 / TP 149.40."],
+    ["rules", "Trading rules updated", "Lots ≤ 2 · amount ≤ $500 · 8/day · auto-pause at 5% loss."],
+    ["schedule", "Scheduled DE40", "BUY 1 lot at 15:45 EAT on Paper Main. Runs via Trade Scheduler (T-6).", "OST-2025-00135"],
+    ["control", "Automation paused", "Rules and scheduled execution stopped. Manual tickets still pass risk checks."],
+    ["signal", "Saved signal XAUUSD", "BUY 0.5 lots @ 2166.80, SL 2158.00 / TP 2185.00."],
+    ["schedule", "Scheduled GBPJPY", "BUY 0.4 lots at 11:15 EAT on Paper Reserve. Runs via Trade Scheduler (T-6).", "OST-2025-00133"],
+  ] as [AutomationEvent["kind"], string, string, string?][]
+).map(([kind, title, detail, ref], i) => ({
+  id: `evt-seed-${i + 1}`,
+  at: base - (i * 47 + 21) * 60_000,
+  kind,
+  title,
+  detail,
+  ...(ref ? { ref } : {}),
+}));
+
+function pushEvent(kind: AutomationEvent["kind"], title: string, detail: string, ref?: string) {
+  activityStore.unshift({
+    id: `evt-${Date.now()}-${eventSeq++}`,
+    at: deskNow(),
+    kind,
+    title,
+    detail,
+    ...(ref ? { ref } : {}),
+  });
+  if (activityStore.length > 60) activityStore.length = 60;
+}
+
+export const getAutomationActivity = (): Promise<AutomationEvent[]> =>
+  latency(activityStore.slice(0, 40).map((e) => ({ ...e })), 260, 420);
+
+export function automationEventCsv(events: AutomationEvent[]): string {
+  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const rows = [
+    ["Time (EAT)", "Kind", "Title", "Detail", "Ref"].join(","),
+    ...events.map((e) => [eatTime(e.at), e.kind, e.title, e.detail, e.ref ?? ""].map(esc).join(",")),
+  ];
+  return rows.join("\n");
+}
+
+/* ── Helpers ─────────────────────────────────────────────── */
+
+function fmtUsd(v: number): string {
+  return `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}

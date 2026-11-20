@@ -10,10 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as Auth2faRouteImport } from './routes/auth/2fa'
+import { Route as AuthBrokerConnectRouteImport } from './routes/auth/broker-connect'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AuthOnboardRouteImport } from './routes/auth/onboard'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthSigninRouteImport } from './routes/auth/signin'
+import { Route as AuthSignupRouteImport } from './routes/auth/signup'
+import { Route as AuthVerifyOtpRouteImport } from './routes/auth/verify-otp'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardAccountsRouteImport } from './routes/dashboard/accounts'
 import { Route as DashboardAutomationRouteImport } from './routes/dashboard/automation'
 import { Route as DashboardCopilotRouteImport } from './routes/dashboard/copilot'
 import { Route as DashboardDepositsRouteImport } from './routes/dashboard/deposits'
+import { Route as DashboardMarketsRouteImport } from './routes/dashboard/markets'
 import { Route as DashboardNotificationsRouteImport } from './routes/dashboard/notifications'
 import { Route as DashboardPositionsRouteImport } from './routes/dashboard/positions'
 import { Route as DashboardRecordsRouteImport } from './routes/dashboard/records'
@@ -21,13 +31,64 @@ import { Route as DashboardRiskRouteImport } from './routes/dashboard/risk'
 import { Route as DashboardSchedulerRouteImport } from './routes/dashboard/scheduler'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals'
+import { Route as DashboardTradeRouteImport } from './routes/dashboard/trade'
 import { Route as DashboardTransfersRouteImport } from './routes/dashboard/transfers'
 import { Route as DashboardWithdrawalsRouteImport } from './routes/dashboard/withdrawals'
+import { Route as HomeIndexRouteImport } from './routes/home/index'
+import { Route as HomeBrokersRouteImport } from './routes/home/brokers'
+import { Route as HomeHowItWorksRouteImport } from './routes/home/how-it-works'
+import { Route as HomeStatusRouteImport } from './routes/home/status'
+import { Route as HomeLegalDocRouteImport } from './routes/home/legal.$doc'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
+} as any)
+const Auth2faRoute = Auth2faRouteImport.update({
+  id: '/auth/2fa',
+  path: '/auth/2fa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthBrokerConnectRoute = AuthBrokerConnectRouteImport.update({
+  id: '/auth/broker-connect',
+  path: '/auth/broker-connect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthOnboardRoute = AuthOnboardRouteImport.update({
+  id: '/auth/onboard',
+  path: '/auth/onboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSigninRoute = AuthSigninRouteImport.update({
+  id: '/auth/signin',
+  path: '/auth/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/auth/signup',
+  path: '/auth/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyOtpRoute = AuthVerifyOtpRouteImport.update({
+  id: '/auth/verify-otp',
+  path: '/auth/verify-otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAccountsRoute = DashboardAccountsRouteImport.update({
   id: '/accounts',
@@ -47,6 +108,11 @@ const DashboardCopilotRoute = DashboardCopilotRouteImport.update({
 const DashboardDepositsRoute = DashboardDepositsRouteImport.update({
   id: '/deposits',
   path: '/deposits',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMarketsRoute = DashboardMarketsRouteImport.update({
+  id: '/markets',
+  path: '/markets',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardNotificationsRoute = DashboardNotificationsRouteImport.update({
@@ -84,6 +150,11 @@ const DashboardSignalsRoute = DashboardSignalsRouteImport.update({
   path: '/signals',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardTradeRoute = DashboardTradeRouteImport.update({
+  id: '/trade',
+  path: '/trade',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardTransfersRoute = DashboardTransfersRouteImport.update({
   id: '/transfers',
   path: '/transfers',
@@ -94,13 +165,47 @@ const DashboardWithdrawalsRoute = DashboardWithdrawalsRouteImport.update({
   path: '/withdrawals',
   getParentRoute: () => DashboardRoute,
 } as any)
+const HomeIndexRoute = HomeIndexRouteImport.update({
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeBrokersRoute = HomeBrokersRouteImport.update({
+  id: '/home/brokers',
+  path: '/home/brokers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeHowItWorksRoute = HomeHowItWorksRouteImport.update({
+  id: '/home/how-it-works',
+  path: '/home/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeStatusRoute = HomeStatusRouteImport.update({
+  id: '/home/status',
+  path: '/home/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeLegalDocRoute = HomeLegalDocRouteImport.update({
+  id: '/home/legal/$doc',
+  path: '/home/legal/$doc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
+  '/auth/2fa': typeof Auth2faRoute
+  '/auth/broker-connect': typeof AuthBrokerConnectRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/onboard': typeof AuthOnboardRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/signin': typeof AuthSigninRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-otp': typeof AuthVerifyOtpRoute
   '/dashboard/accounts': typeof DashboardAccountsRoute
   '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/copilot': typeof DashboardCopilotRoute
   '/dashboard/deposits': typeof DashboardDepositsRoute
+  '/dashboard/markets': typeof DashboardMarketsRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
   '/dashboard/records': typeof DashboardRecordsRoute
@@ -108,15 +213,30 @@ export interface FileRoutesByFullPath {
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/trade': typeof DashboardTradeRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
   '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
+  '/home/brokers': typeof HomeBrokersRoute
+  '/home/how-it-works': typeof HomeHowItWorksRoute
+  '/home/status': typeof HomeStatusRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/home/': typeof HomeIndexRoute
+  '/home/legal/$doc': typeof HomeLegalDocRoute
 }
 export interface FileRoutesByTo {
-  '/dashboard': typeof DashboardRouteWithChildren
+  '/auth/2fa': typeof Auth2faRoute
+  '/auth/broker-connect': typeof AuthBrokerConnectRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/onboard': typeof AuthOnboardRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/signin': typeof AuthSigninRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-otp': typeof AuthVerifyOtpRoute
   '/dashboard/accounts': typeof DashboardAccountsRoute
   '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/copilot': typeof DashboardCopilotRoute
   '/dashboard/deposits': typeof DashboardDepositsRoute
+  '/dashboard/markets': typeof DashboardMarketsRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
   '/dashboard/records': typeof DashboardRecordsRoute
@@ -124,16 +244,32 @@ export interface FileRoutesByTo {
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/trade': typeof DashboardTradeRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
   '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
+  '/home/brokers': typeof HomeBrokersRoute
+  '/home/how-it-works': typeof HomeHowItWorksRoute
+  '/home/status': typeof HomeStatusRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/home': typeof HomeIndexRoute
+  '/home/legal/$doc': typeof HomeLegalDocRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/dashboard': typeof DashboardRouteWithChildren
+  '/auth/2fa': typeof Auth2faRoute
+  '/auth/broker-connect': typeof AuthBrokerConnectRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/onboard': typeof AuthOnboardRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/signin': typeof AuthSigninRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-otp': typeof AuthVerifyOtpRoute
   '/dashboard/accounts': typeof DashboardAccountsRoute
   '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/copilot': typeof DashboardCopilotRoute
   '/dashboard/deposits': typeof DashboardDepositsRoute
+  '/dashboard/markets': typeof DashboardMarketsRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
   '/dashboard/records': typeof DashboardRecordsRoute
@@ -141,17 +277,33 @@ export interface FileRoutesById {
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/trade': typeof DashboardTradeRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
   '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
+  '/home/brokers': typeof HomeBrokersRoute
+  '/home/how-it-works': typeof HomeHowItWorksRoute
+  '/home/status': typeof HomeStatusRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/home/': typeof HomeIndexRoute
+  '/home/legal/$doc': typeof HomeLegalDocRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/dashboard'
+    | '/auth/2fa'
+    | '/auth/broker-connect'
+    | '/auth/forgot-password'
+    | '/auth/onboard'
+    | '/auth/reset-password'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/auth/verify-otp'
     | '/dashboard/accounts'
     | '/dashboard/automation'
     | '/dashboard/copilot'
     | '/dashboard/deposits'
+    | '/dashboard/markets'
     | '/dashboard/notifications'
     | '/dashboard/positions'
     | '/dashboard/records'
@@ -159,15 +311,30 @@ export interface FileRouteTypes {
     | '/dashboard/scheduler'
     | '/dashboard/settings'
     | '/dashboard/signals'
+    | '/dashboard/trade'
     | '/dashboard/transfers'
     | '/dashboard/withdrawals'
+    | '/home/brokers'
+    | '/home/how-it-works'
+    | '/home/status'
+    | '/dashboard/'
+    | '/home/'
+    | '/home/legal/$doc'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/dashboard'
+    | '/auth/2fa'
+    | '/auth/broker-connect'
+    | '/auth/forgot-password'
+    | '/auth/onboard'
+    | '/auth/reset-password'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/auth/verify-otp'
     | '/dashboard/accounts'
     | '/dashboard/automation'
     | '/dashboard/copilot'
     | '/dashboard/deposits'
+    | '/dashboard/markets'
     | '/dashboard/notifications'
     | '/dashboard/positions'
     | '/dashboard/records'
@@ -175,15 +342,31 @@ export interface FileRouteTypes {
     | '/dashboard/scheduler'
     | '/dashboard/settings'
     | '/dashboard/signals'
+    | '/dashboard/trade'
     | '/dashboard/transfers'
     | '/dashboard/withdrawals'
+    | '/home/brokers'
+    | '/home/how-it-works'
+    | '/home/status'
+    | '/dashboard'
+    | '/home'
+    | '/home/legal/$doc'
   id:
     | '__root__'
     | '/dashboard'
+    | '/auth/2fa'
+    | '/auth/broker-connect'
+    | '/auth/forgot-password'
+    | '/auth/onboard'
+    | '/auth/reset-password'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/auth/verify-otp'
     | '/dashboard/accounts'
     | '/dashboard/automation'
     | '/dashboard/copilot'
     | '/dashboard/deposits'
+    | '/dashboard/markets'
     | '/dashboard/notifications'
     | '/dashboard/positions'
     | '/dashboard/records'
@@ -191,12 +374,32 @@ export interface FileRouteTypes {
     | '/dashboard/scheduler'
     | '/dashboard/settings'
     | '/dashboard/signals'
+    | '/dashboard/trade'
     | '/dashboard/transfers'
     | '/dashboard/withdrawals'
+    | '/home/brokers'
+    | '/home/how-it-works'
+    | '/home/status'
+    | '/dashboard/'
+    | '/home/'
+    | '/home/legal/$doc'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
+  Auth2faRoute: typeof Auth2faRoute
+  AuthBrokerConnectRoute: typeof AuthBrokerConnectRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthOnboardRoute: typeof AuthOnboardRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthSigninRoute: typeof AuthSigninRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+  AuthVerifyOtpRoute: typeof AuthVerifyOtpRoute
+  HomeBrokersRoute: typeof HomeBrokersRoute
+  HomeHowItWorksRoute: typeof HomeHowItWorksRoute
+  HomeStatusRoute: typeof HomeStatusRoute
+  HomeIndexRoute: typeof HomeIndexRoute
+  HomeLegalDocRoute: typeof HomeLegalDocRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -207,6 +410,69 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/2fa': {
+      id: '/auth/2fa'
+      path: '/auth/2fa'
+      fullPath: '/auth/2fa'
+      preLoaderRoute: typeof Auth2faRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/broker-connect': {
+      id: '/auth/broker-connect'
+      path: '/auth/broker-connect'
+      fullPath: '/auth/broker-connect'
+      preLoaderRoute: typeof AuthBrokerConnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/onboard': {
+      id: '/auth/onboard'
+      path: '/auth/onboard'
+      fullPath: '/auth/onboard'
+      preLoaderRoute: typeof AuthOnboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signin': {
+      id: '/auth/signin'
+      path: '/auth/signin'
+      fullPath: '/auth/signin'
+      preLoaderRoute: typeof AuthSigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/auth/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify-otp': {
+      id: '/auth/verify-otp'
+      path: '/auth/verify-otp'
+      fullPath: '/auth/verify-otp'
+      preLoaderRoute: typeof AuthVerifyOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/accounts': {
       id: '/dashboard/accounts'
@@ -234,6 +500,13 @@ declare module '@tanstack/react-router' {
       path: '/deposits'
       fullPath: '/dashboard/deposits'
       preLoaderRoute: typeof DashboardDepositsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/markets': {
+      id: '/dashboard/markets'
+      path: '/markets'
+      fullPath: '/dashboard/markets'
+      preLoaderRoute: typeof DashboardMarketsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/notifications': {
@@ -285,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSignalsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/trade': {
+      id: '/dashboard/trade'
+      path: '/trade'
+      fullPath: '/dashboard/trade'
+      preLoaderRoute: typeof DashboardTradeRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/transfers': {
       id: '/dashboard/transfers'
       path: '/transfers'
@@ -299,6 +579,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWithdrawalsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/home/': {
+      id: '/home/'
+      path: '/home'
+      fullPath: '/home/'
+      preLoaderRoute: typeof HomeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home/brokers': {
+      id: '/home/brokers'
+      path: '/home/brokers'
+      fullPath: '/home/brokers'
+      preLoaderRoute: typeof HomeBrokersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home/how-it-works': {
+      id: '/home/how-it-works'
+      path: '/home/how-it-works'
+      fullPath: '/home/how-it-works'
+      preLoaderRoute: typeof HomeHowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home/status': {
+      id: '/home/status'
+      path: '/home/status'
+      fullPath: '/home/status'
+      preLoaderRoute: typeof HomeStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home/legal/$doc': {
+      id: '/home/legal/$doc'
+      path: '/home/legal/$doc'
+      fullPath: '/home/legal/$doc'
+      preLoaderRoute: typeof HomeLegalDocRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -307,6 +622,7 @@ interface DashboardRouteChildren {
   DashboardAutomationRoute: typeof DashboardAutomationRoute
   DashboardCopilotRoute: typeof DashboardCopilotRoute
   DashboardDepositsRoute: typeof DashboardDepositsRoute
+  DashboardMarketsRoute: typeof DashboardMarketsRoute
   DashboardNotificationsRoute: typeof DashboardNotificationsRoute
   DashboardPositionsRoute: typeof DashboardPositionsRoute
   DashboardRecordsRoute: typeof DashboardRecordsRoute
@@ -314,8 +630,10 @@ interface DashboardRouteChildren {
   DashboardSchedulerRoute: typeof DashboardSchedulerRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSignalsRoute: typeof DashboardSignalsRoute
+  DashboardTradeRoute: typeof DashboardTradeRoute
   DashboardTransfersRoute: typeof DashboardTransfersRoute
   DashboardWithdrawalsRoute: typeof DashboardWithdrawalsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -323,6 +641,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAutomationRoute: DashboardAutomationRoute,
   DashboardCopilotRoute: DashboardCopilotRoute,
   DashboardDepositsRoute: DashboardDepositsRoute,
+  DashboardMarketsRoute: DashboardMarketsRoute,
   DashboardNotificationsRoute: DashboardNotificationsRoute,
   DashboardPositionsRoute: DashboardPositionsRoute,
   DashboardRecordsRoute: DashboardRecordsRoute,
@@ -330,8 +649,10 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSchedulerRoute: DashboardSchedulerRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSignalsRoute: DashboardSignalsRoute,
+  DashboardTradeRoute: DashboardTradeRoute,
   DashboardTransfersRoute: DashboardTransfersRoute,
   DashboardWithdrawalsRoute: DashboardWithdrawalsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -340,6 +661,19 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
+  Auth2faRoute: Auth2faRoute,
+  AuthBrokerConnectRoute: AuthBrokerConnectRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthOnboardRoute: AuthOnboardRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthSigninRoute: AuthSigninRoute,
+  AuthSignupRoute: AuthSignupRoute,
+  AuthVerifyOtpRoute: AuthVerifyOtpRoute,
+  HomeBrokersRoute: HomeBrokersRoute,
+  HomeHowItWorksRoute: HomeHowItWorksRoute,
+  HomeStatusRoute: HomeStatusRoute,
+  HomeIndexRoute: HomeIndexRoute,
+  HomeLegalDocRoute: HomeLegalDocRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

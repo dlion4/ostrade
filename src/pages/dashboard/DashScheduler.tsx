@@ -15,6 +15,7 @@ import {
   parseBulkPaste, createSingleSchedule, createBulkSchedules, updateScheduleStatus, runScheduleNow, deleteSchedule, duplicateSchedule,
   type SchedulerSchedule
 } from "@/services/scheduler";
+import { PageHero } from "@/components/PageHero";
 import css from "@/styles/pages/dash-scheduler.css?inline";
 
 function Skel({ h=18, w="100%"}: {h?:number,w?:string|number}){ return <span className="os-skel" style={{height:h,width:w}} aria-hidden />}
@@ -156,17 +157,26 @@ export function DashSchedulerPage() {
   return (
     <main className="page-dash-scheduler">
       {/* HEADER */}
-      <div className="os-page-head">
-        <div>
-          <div className="os-eyebrow">T-6 · TRADE SCHEDULER</div>
-          <h1 className="os-h1">Trade Scheduler</h1>
-          <p className="os-lead">Set-and-forget executions. Up to 50 concurrent schedules — one-time, session, price and indicator triggers. <span className="os-badge-cap">MAX 50 · 20 at a go</span></p>
-        </div>
-        <div className="os-head-actions">
-          <button className="os-btn os-btn-ghost" onClick={()=>setBulkOpen(true)}><Upload size={16}/> Bulk Paste (20)</button>
-          <button className="os-btn os-btn-primary" onClick={openCreate}><CalendarIcon size={16}/> New Schedule</button>
-        </div>
-      </div>
+      <PageHero
+        icon={CalendarIcon}
+        kicker="T-6 · TRADE SCHEDULER"
+        titleId="os-sched-title"
+        title="Trade Scheduler"
+        lead="Set-and-forget executions. Up to 50 concurrent schedules — one-time, session, price and indicator triggers."
+        meta={
+          <>
+            <span className="os-hero-pill"><ShieldCheck size={13} aria-hidden /> LOCAL SIMULATION</span>
+            <span><CheckCircle2 size={13} aria-hidden /> MAX 50 · 20 at a go</span>
+            <span><CalendarIcon size={13} aria-hidden /> EAT (UTC+3)</span>
+          </>
+        }
+        actions={
+          <>
+            <button className="btn os-hero-btn" onClick={()=>setBulkOpen(true)}><Upload size={16} aria-hidden/> Bulk Paste (20)</button>
+            <button className="btn os-hero-btn os-hero-primary" onClick={openCreate}><CalendarIcon size={16} aria-hidden/> New Schedule</button>
+          </>
+        }
+      />
 
       {/* S1 KPI ROW */}
       <section className="os-section">

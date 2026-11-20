@@ -414,59 +414,7 @@
 }
 
 /* ── S6 Deriv Open Contracts ─────────────────────────────── */
-.page-dash-positions .os-deriv-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-}
-.page-dash-positions .os-deriv-card {
-  padding: 1rem;
-  border-radius: var(--os-radius);
-  background: var(--os-bg);
-  border: 1px solid var(--os-hairline);
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  transition: transform 0.16s var(--os-ease), border-color 0.16s var(--os-ease);
-}
-.page-dash-positions .os-deriv-card:hover {
-  border-color: var(--os-brand);
-  transform: translateY(-2px);
-}
-.page-dash-positions .os-deriv-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-.page-dash-positions .os-deriv-contract-type {
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  background: var(--os-brand-soft);
-  color: var(--os-brand-ink);
-  font-family: var(--os-font-mono);
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-.page-dash-positions .os-deriv-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  padding: 0.6rem;
-  border-radius: 8px;
-  background: var(--os-surface-1);
-  border: 1px solid var(--os-hairline);
-}
-.page-dash-positions .os-deriv-stats-grid span {
-  display: block;
-  font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--os-text-3);
-}
-.page-dash-positions .os-deriv-stats-grid strong {
-  font-size: 0.9rem;
-}
+
 
 /* ── S7 Margin & Exposure Monitor ────────────────────────── */
 .page-dash-positions .os-margin-bar {
@@ -590,22 +538,6 @@
 }
 
 /* ── S9 Broker Capability Matrix ─────────────────────────── */
-.page-dash-positions .os-cap-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-.page-dash-positions .os-cap-check.is-yes {
-  color: var(--os-up);
-}
-.page-dash-positions .os-cap-check.is-no {
-  color: var(--os-down);
-}
-.page-dash-positions .os-cap-check.is-partial {
-  color: var(--os-warn);
-}
 
 /* ── Animations & Responsive Collapse ────────────────────── */
 @keyframes os-fade-in {
@@ -653,5 +585,112 @@
   }
   .page-dash-positions .os-data-table.os-matrix {
     min-width: 600px;
+  }
+}
+
+/* ── Positions page tabs ──────────────────────────────────── */
+.page-dash-positions .os-pos-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--os-hairline);
+  border-radius: 12px;
+  background: var(--os-surface-1);
+}
+.page-dash-positions .os-pos-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--os-text-2);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.page-dash-positions .os-pos-tabs button svg {
+  flex: none;
+}
+.page-dash-positions .os-pos-tabs button[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--os-brand-ink) 32%, var(--os-hairline));
+  background: color-mix(in srgb, var(--os-brand-ink) 10%, var(--os-surface-1));
+  color: var(--os-brand-ink);
+}
+.page-dash-positions .os-pos-tabs button:hover:not([aria-selected="true"]) {
+  background: var(--os-surface-2);
+}
+.page-dash-positions .os-pos-tabs button:focus-visible {
+  outline: 2px solid var(--os-brand-ink);
+  outline-offset: 2px;
+}
+.page-dash-positions .os-pos-tabpanel[hidden] {
+  display: none;
+}
+
+/* ── Muted (collapsed) secondary block ────────────────────── */
+.page-dash-positions .os-pos-muted-block {
+  border: 1px dashed var(--os-hairline);
+  border-radius: var(--os-radius-lg, 14px);
+  background: var(--os-surface-1);
+  opacity: 0.85;
+}
+.page-dash-positions .os-pos-muted-block summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  color: var(--os-text-2);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.page-dash-positions .os-pos-muted-block summary::-webkit-details-marker {
+  display: none;
+}
+.page-dash-positions .os-pos-muted-block summary::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--os-text-3);
+  transition: transform 0.15s ease;
+}
+.page-dash-positions .os-pos-muted-block[open] summary::after {
+  transform: rotate(90deg);
+}
+.page-dash-positions .os-pos-muted-block summary:focus-visible {
+  outline: 2px solid var(--os-brand-ink);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.page-dash-positions .os-pos-muted-tag {
+  padding: 0.08rem 0.4rem;
+  border: 1px solid var(--os-hairline);
+  border-radius: 6px;
+  font-family: var(--os-font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--os-text-3);
+}
+.page-dash-positions .os-pos-muted-sub {
+  padding: 0 1rem 0.6rem;
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--os-text-3);
+}
+.page-dash-positions .os-pos-muted-block > .os-table-wrap,
+.page-dash-positions .os-pos-muted-block > div {
+  padding: 0 1rem 1rem;
+}
+@media (max-width: 575px) {
+  .page-dash-positions .os-pos-tabs {
+    grid-template-columns: 1fr;
   }
 }

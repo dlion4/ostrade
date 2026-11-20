@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
-  ArrowDownWideNarrow,
   ArrowRight,
   AudioLines,
-  ChartNoAxesCombined,
   ChevronDown,
   FileSpreadsheet,
   FileUp,
@@ -13,20 +11,16 @@ import {
   Shield,
   ShieldCheck,
   SlidersHorizontal,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import {
   eatTime,
-  muteFeed,
   overrideGuard,
   updateGuards,
-  type DeskFeed,
   type GuardEvent,
   type GuardPolicy,
 } from "@/services/signalDesk";
-import { Dialog, PanelTitle, SourceMark, formatPnl } from "./DeskUI";
+import { Dialog, PanelTitle } from "./DeskUI";
 
 export function ImportSection({
   onImport,
@@ -79,116 +73,6 @@ export function ImportSection({
     </section>
   );
 }
-export function PerformanceSection({
-  feeds,
-  refresh,
-}: {
-  feeds: DeskFeed[];
-  refresh: () => void;
-}) {
-  const [sort, setSort] = useState<"pnl" | "winRate" | "received">("pnl"),
-    [all, setAll] = useState(false);
-  const toast = useToast();
-  const mut = useMutation({
-    mutationFn: muteFeed,
-    onSuccess: (f) => {
-      refresh();
-      toast(`${f.name} ${f.muted ? "muted" : "unmuted"}`);
-    },
-    onError: (e) => toast(e.message),
-  });
-  const sorted = [...feeds].sort((a, b) => b[sort] - a[sort]);
-  return (
-    <section className="os-desk-panel os-performance">
-      <PanelTitle
-        icon={ChartNoAxesCombined}
-        title="Source performance"
-        action={
-          <label className="os-sort-control">
-            <ArrowDownWideNarrow size={14} />
-            <select
-              aria-label="Rank signal sources"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as typeof sort)}
-            >
-              <option value="pnl">Net P&L</option>
-              <option value="winRate">Win rate</option>
-              <option value="received">Signal volume</option>
-            </select>
-          </label>
-        }
-      />
-      <p className="os-panel-desc">
-        Compare source quality using the paper workspace's recorded outcomes.
-      </p>
-      <div className="os-inbox-scroll">
-        <table className="os-desk-table">
-          <thead>
-            <tr>
-              {[
-                "Source feed",
-                "Signals",
-                "Executed",
-                "Win rate",
-                "Net P&L",
-                "Slippage",
-                "Held",
-                "",
-              ].map((x, i) => (
-                <th key={i}>{x}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.slice(0, all ? sorted.length : 4).map((f) => (
-              <tr key={f.id}>
-                <td>
-                  <div className="os-source-cell">
-                    <SourceMark source={f.source} small />
-                    <b>{f.name}</b>
-                  </div>
-                </td>
-                <td>{f.received}</td>
-                <td>{f.executed}</td>
-                <td>
-                  <span className="os-win">
-                    <i style={{ width: `${f.winRate}%` }} />
-                  </span>{" "}
-                  {f.winRate.toFixed(1)}%
-                </td>
-                <td className={f.pnl >= 0 ? "os-up" : "os-down"}>
-                  {formatPnl(f.pnl)}
-                </td>
-                <td>{f.slippage.toFixed(2)} pips</td>
-                <td>{f.held}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="os-soft-button os-tiny-button"
-                    disabled={mut.isPending}
-                    onClick={() => mut.mutate(f.id)}
-                  >
-                    {f.muted ? <Volume2 size={12} /> : <VolumeX size={12} />}{" "}
-                    {f.muted ? "Unmute" : "Mute"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <button
-        type="button"
-        className="os-bottom-link"
-        onClick={() => setAll(!all)}
-      >
-        {all ? "Show top sources" : `View all ${feeds.length} sources`}{" "}
-        <ChevronDown size={13} />
-      </button>
-    </section>
-  );
-}
-
 export function GuardSection({
   events,
   policy,

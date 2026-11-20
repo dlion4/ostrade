@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,6 +10,8 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import {
+  CircleCheck,
+  CalendarDays,
   AlertOctagon,
   AlertTriangle,
   ArrowLeftRight,
@@ -18,9 +20,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
-  Compass,
   ExternalLink,
-  Flame,
   Layers,
   Percent,
   RefreshCw,
@@ -47,7 +47,6 @@ import {
 import {
   getConsolidatedPositions,
   getPendingOrders,
-  getDerivOpenContracts,
   getPositionDetailMeta,
   getMarginExposureData,
   closePosition,
@@ -60,11 +59,11 @@ import {
   cancelPendingOrder,
   modifyPendingOrder,
   executePendingOrderNow,
-  sellDerivContract,
   addPositionJournalNote,
   type ConsolidatedPosition,
   type PendingOrder,
 } from "@/services/positions";
+import { PageHero } from "@/components/PageHero";
 import css from "@/styles/pages/dash-positions.css?inline";
 
 function fmtUsd(v: number, signed = false): string {
@@ -85,6 +84,21 @@ function fmtPrice(v: number, decimals = 4): string {
 
 function Skel({ h = 20, w = "100%" }: { h?: number; w?: number | string }) {
   return <span className="os-skel" style={{ height: h, width: w }} aria-hidden />;
+}
+
+const positionTabs = [
+  { id: "positions", label: "Positions", icon: Layers },
+  { id: "protections", label: "Protections", icon: ShieldCheck },
+  { id: "margin", label: "Margin & Limits", icon: Shield },
+] as const;
+type PositionTab = (typeof positionTabs)[number]["id"];
+
+function PosTabPanel({ tab, activeTab, children }: { tab: PositionTab; activeTab: PositionTab; children: ReactNode }) {
+  return (
+    <div className="os-pos-tabpanel" id={`pos-panel-${tab}`} role="tabpanel" aria-labelledby={`pos-tab-${tab}`} hidden={tab !== activeTab}>
+      {children}
+    </div>
+  );
 }
 
 export function DashPositionsPage() {
@@ -138,6 +152,7 @@ export function DashPositionsPage() {
   const [panicModalOpen, setPanicModalOpen] = useState(false);
 
   // Queries
+  const [activeTab, setActiveTab] = useState<PositionTab>("positions");
   const accountsQ = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const positionsQ = useQuery({
     queryKey: [
@@ -175,11 +190,6 @@ export function DashPositionsPage() {
       }),
   });
 
-  const derivContractsQ = useQuery({
-    queryKey: ["deriv-open-contracts"],
-    queryFn: getDerivOpenContracts,
-  });
-
   const marginHealthQ = useQuery({
     queryKey: ["margin-exposure-data"],
     queryFn: getMarginExposureData,
@@ -197,7 +207,6 @@ export function DashPositionsPage() {
     qc.invalidateQueries({ queryKey: ["positions"] });
     qc.invalidateQueries({ queryKey: ["records"] });
     qc.invalidateQueries({ queryKey: ["pending-orders"] });
-    qc.invalidateQueries({ queryKey: ["deriv-open-contracts"] });
     qc.invalidateQueries({ queryKey: ["margin-exposure-data"] });
     qc.invalidateQueries({ queryKey: ["records"] });
     qc.invalidateQueries({ queryKey: ["accounts"] });
@@ -279,16 +288,6 @@ export function DashPositionsPage() {
   // Execute pending order now mutation (simulated paper fill)
   const execPendingMut = useMutation({
     mutationFn: (id: string) => executePendingOrderNow(id),
-    onSuccess: (res) => {
-      toast(res.title);
-      refreshAll();
-    },
-  });
-
-  // Sell Deriv contract mutation
-  const sellContractMut = useMutation({
-    mutationFn: ({ id, type }: { id: string; type: "market" | "target" }) =>
-      sellDerivContract(id, type),
     onSuccess: (res) => {
       toast(res.title);
       refreshAll();
@@ -686,48 +685,73 @@ export function DashPositionsPage() {
   return (
     <main className="page-dash-positions">
       {/* Page Header */}
-      <div className="os-pos-top-intro">
-        <div>
-          <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
-            <span className="os-pos-eyebrow">T-7 · CONSOLIDATED ORDER BOOK</span>
-            <span className="os-pos-static-pill">
-              STATIC SNAPSHOT · 100% LOCAL SIMULATION ON PAPER
-            </span>
-          </div>
-          <h1 className="os-pos-h1">Positions &amp; Orders</h1>
-          <p className="os-pos-sub mb-0">
-            One multi-broker portfolio book: view live positions, manage brackets,
-            scale out, reverse, cancel pending orders, or trigger panic flatten.
-          </p>
-        </div>
-        <div className="d-flex flex-wrap align-items-center gap-2">
+      <PageHero
+        icon={Layers}
+        kicker="T-7 · CONSOLIDATED ORDER BOOK"
+        titleId="os-pos-title"
+        title={<>Positions <span className="os-hero-accent">&amp;</span> Orders</>}
+        lead="One multi-broker portfolio book: view live positions, manage brackets, scale out, reverse, cancel pending orders, or trigger panic flatten."
+        meta={
+          <>
+            <span className="os-hero-pill"><ShieldCheck size={13} aria-hidden /> 100% LOCAL SIMULATION ON PAPER</span>
+            <span><CalendarDays size={13} aria-hidden /> EAT (UTC+3)</span>
+            <span><CircleCheck size={13} aria-hidden /> Static snapshot</span>
+          </>
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn os-hero-btn"
+              onClick={refreshAll}
+              title="Refresh positions book"
+            >
+              <RefreshCw size={15} aria-hidden /> Refresh Book
+            </button>
+            <Link to="/dashboard/trade" className="btn os-hero-btn">
+              <Send size={15} aria-hidden /> Trade Ticket (T-3)
+            </Link>
+            <button
+              type="button"
+              className="btn os-hero-btn os-hero-danger"
+              onClick={() => setPanicModalOpen(true)}
+            >
+              <AlertOctagon size={15} aria-hidden /> Emergency Flatten
+            </button>
+          </>
+        }
+      />
+
+      <div className="os-pos-tabs" role="tablist" aria-label="Positions & Orders sections">
+        {positionTabs.map(({ id, label, icon: Icon }, index) => (
           <button
+            key={id}
+            id={`pos-tab-${id}`}
             type="button"
-            className="os-btn os-btn-ghost os-btn-sm"
-            onClick={refreshAll}
-            title="Refresh positions book"
-          >
-            <RefreshCw size={15} aria-hidden /> Refresh Book
-          </button>
-          <Link to="/dashboard/trade" className="os-btn os-btn-ghost os-btn-sm">
-            <Send size={15} aria-hidden /> Trade Ticket (T-3)
-          </Link>
-          <button
-            type="button"
-            className="os-btn os-btn-sm"
-            style={{
-              background: "var(--os-down-soft)",
-              color: "var(--os-down)",
-              border: "1px solid var(--os-down)",
-              fontWeight: 700,
+            role="tab"
+            aria-selected={activeTab === id}
+            aria-controls={`pos-panel-${id}`}
+            tabIndex={activeTab === id ? 0 : -1}
+            onClick={() => setActiveTab(id)}
+            onKeyDown={(event) => {
+              const last = positionTabs.length - 1;
+              const nextIndex = event.key === "ArrowRight" ? (index === last ? 0 : index + 1)
+                : event.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
+                : event.key === "Home" ? 0 : event.key === "End" ? last : null;
+              if (nextIndex === null) return;
+              event.preventDefault();
+              const next = positionTabs[nextIndex].id;
+              setActiveTab(next);
+              document.getElementById(`pos-tab-${next}`)?.focus();
             }}
-            onClick={() => setPanicModalOpen(true)}
           >
-            <AlertOctagon size={15} aria-hidden /> Emergency Flatten
+            <Icon size={16} aria-hidden />
+            {label}
           </button>
-        </div>
+        ))}
       </div>
 
+      <PosTabPanel tab="positions" activeTab={activeTab}>
       {/* S1: Portfolio KPI Row (5 Cards) */}
       <section className="os-pos-section" aria-label="Portfolio health KPIs">
         <div className="row g-3 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-5">
@@ -1163,234 +1187,10 @@ export function DashPositionsPage() {
         </div>
       </section>
 
-      {/* S6: Deriv Open Contracts Panel */}
-      <section className="os-pos-section" aria-labelledby="os-deriv-heading">
-        <div className="os-pos-card">
-          <div className="os-pos-card-head">
-            <div>
-              <h2 id="os-deriv-heading" className="os-pos-h2">
-                <Flame size={18} aria-hidden /> Deriv Open Contracts ({(derivContractsQ.data ?? []).length})
-              </h2>
-              <p className="os-pos-card-sub">
-                Dedicated contract position management: Multiplier deal-cancellation windows, Accumulator compounding paths, and Rise/Fall tick barriers.
-              </p>
-            </div>
-            <Link to="/brokers" className="os-pos-link">
-              Deriv Capability Matrix <ArrowRight size={14} aria-hidden />
-            </Link>
-          </div>
 
-          {derivContractsQ.isPending ? (
-            <Skel h={160} />
-          ) : (
-            <div className="os-deriv-grid">
-              {(derivContractsQ.data ?? []).map((contract) => (
-                <div key={contract.id} className="os-deriv-card">
-                  <div className="os-deriv-card-top">
-                    <div className="d-flex align-items-center gap-2">
-                      <strong className="os-mono" style={{ fontSize: "1.05rem" }}>
-                        {contract.symbol}
-                      </strong>
-                      <span className="os-deriv-contract-type">
-                        {contract.contractType}
-                      </span>
-                    </div>
-                    <span
-                      className={`os-mono fw-bold ${contract.currentProfit >= 0 ? "os-up" : "os-down"}`}
-                    >
-                      {fmtUsd(contract.currentProfit, true)} ({contract.currentProfitPct.toFixed(1)}%)
-                    </span>
-                  </div>
+      </PosTabPanel>
 
-                  <div className="os-deriv-stats-grid">
-                    <div>
-                      <span>Stake / Payout</span>
-                      <strong className="os-mono">
-                        ${contract.stake.toFixed(2)} / ${contract.payout.toFixed(2)}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Barrier / Factor</span>
-                      <strong className="os-mono">{contract.barrier}</strong>
-                    </div>
-                    <div>
-                      <span>Current Spot</span>
-                      <strong className="os-mono">{fmtPrice(contract.currentSpot, 2)}</strong>
-                    </div>
-                    <div>
-                      <span>Tick State</span>
-                      <small className="d-block text-secondary mt-1">{contract.tickInfo}</small>
-                    </div>
-                  </div>
-
-                  {contract.dealCancellationRemaining && (
-                    <div className="d-flex align-items-center justify-content-between small px-1 text-secondary">
-                      <span>Deal Cancellation:</span>
-                      <strong className="os-mono text-warning">
-                        {contract.dealCancellationRemaining}
-                      </strong>
-                    </div>
-                  )}
-
-                  <div className="d-flex align-items-center justify-content-between gap-2 mt-auto pt-2 border-top">
-                    <small className="text-secondary">{contract.accountLabel}</small>
-                    <div className="d-flex gap-1">
-                      <button
-                        type="button"
-                        className="os-btn os-btn-ghost os-btn-sm"
-                        onClick={() => sellContractMut.mutate({ id: contract.id, type: "target" })}
-                        title="Sell at target"
-                      >
-                        Target
-                      </button>
-                      <button
-                        type="button"
-                        className="os-btn os-btn-primary os-btn-sm"
-                        onClick={() => sellContractMut.mutate({ id: contract.id, type: "market" })}
-                        title="Sell contract at market"
-                      >
-                        Sell Contract
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* S7: Margin & Exposure Monitor */}
-      <section className="os-pos-section" aria-labelledby="os-margin-heading">
-        <div className="row g-4">
-          <div className="col-12 col-xl-7">
-            <div className="os-pos-card h-100">
-              <div className="os-pos-card-head">
-                <div>
-                  <h2 id="os-margin-heading" className="os-pos-h2">
-                    <Shield size={18} aria-hidden /> Account Margin Health &amp; Limits
-                  </h2>
-                  <p className="os-pos-card-sub">
-                    Margin call and stop-out threshold markers. Warnings feed into T-14 Risk &amp; Guardrails.
-                  </p>
-                </div>
-              </div>
-
-              <div className="d-grid gap-3">
-                {marginHealthList.map((mh) => (
-                  <div
-                    key={mh.accountId}
-                    className="p-3 rounded border"
-                    style={{ background: "var(--os-bg)" }}
-                  >
-                    <div className="d-flex align-items-center justify-content-between mb-1">
-                      <div className="d-flex align-items-center gap-2">
-                        <BrokerBadge broker={mh.broker} label={mh.brokerName} />
-                        <strong>{mh.accountLabel}</strong>
-                        <EnvPill env={mh.environment} />
-                      </div>
-                      <span className={`os-health-pill is-${mh.status.toLowerCase()}`}>
-                        {mh.status}
-                      </span>
-                    </div>
-
-                    <div className="d-flex justify-content-between small text-secondary os-mono mt-1 mb-1">
-                      <span>Equity: {fmtUsd(mh.equity)} · Balance: {fmtUsd(mh.balance)}</span>
-                      <span>Level: <b className="text-body">{mh.marginLevelPct.toFixed(1)}%</b></span>
-                    </div>
-
-                    <div className="os-margin-bar">
-                      <span
-                        style={{
-                          width: `${Math.min(100, (mh.marginLevelPct / 600) * 100)}%`,
-                          background:
-                            mh.status === "Critical"
-                              ? "var(--os-down)"
-                              : mh.status === "Warning"
-                              ? "var(--os-warn)"
-                              : "var(--os-up)",
-                        }}
-                      />
-                    </div>
-
-                    <div className="d-flex justify-content-between small text-secondary">
-                      <span>Free: {fmtUsd(mh.freeMargin)} · Used: {fmtUsd(mh.usedMargin)}</span>
-                      <span>Call: {mh.marginCallThresholdPct}% · Stopout: {mh.stopOutLevelPct}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="col-12 col-xl-5">
-            <div className="os-pos-card h-100">
-              <div className="os-pos-card-head">
-                <div>
-                  <h2 className="os-pos-h2">
-                    <Scale size={18} aria-hidden /> Concentration Exposure by Instrument
-                  </h2>
-                  <p className="os-pos-card-sub">
-                    Top position exposures as a percentage of aggregate equity.
-                  </p>
-                </div>
-              </div>
-
-              <div className="os-table-wrap">
-                <table className="os-data-table os-matrix">
-                  <thead>
-                    <tr>
-                      <th>Instrument</th>
-                      <th>Account</th>
-                      <th>Notional</th>
-                      <th>% Equity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {marginHealthList.map((mh) => (
-                      <tr key={mh.accountId}>
-                        <td>
-                          <strong className="os-mono">{mh.topExposureSymbol}</strong>
-                        </td>
-                        <td>{mh.accountLabel}</td>
-                        <td className="os-mono">{fmtUsd(mh.topExposureNotional)}</td>
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
-                            <span className="os-mono fw-bold">{mh.topExposurePct.toFixed(1)}%</span>
-                            <div
-                              style={{
-                                width: 45,
-                                height: 5,
-                                borderRadius: 4,
-                                background: "var(--os-surface-3)",
-                                overflow: "hidden",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: `${Math.min(100, mh.topExposurePct * 1.5)}%`,
-                                  height: "100%",
-                                  background:
-                                    mh.topExposurePct > 50
-                                      ? "var(--os-down)"
-                                      : mh.topExposurePct > 30
-                                      ? "var(--os-warn)"
-                                      : "var(--os-brand)",
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      <PosTabPanel tab="protections" activeTab={activeTab}>
       {/* S8: Quick Protection Actions & Safety Presets */}
       <section className="os-pos-section" aria-labelledby="os-safety-heading">
         <div className="os-pos-card">
@@ -1462,126 +1262,136 @@ export function DashPositionsPage() {
         </div>
       </section>
 
-      {/* S9: Broker Capability Reference & Position Matrix */}
-      <section className="os-pos-section" aria-labelledby="os-matrix-heading">
-        <div className="os-pos-card">
-          <div className="os-pos-card-head">
-            <div>
-              <h2 id="os-matrix-heading" className="os-pos-h2">
-                <Compass size={18} aria-hidden /> Broker Position Capability Matrix (§3.3)
-              </h2>
-              <p className="os-pos-card-sub">
-                Shows exact operations supported per broker API: Modify SL/TP in place, partial close volume, position reversal, and hedging.
-              </p>
+      </PosTabPanel>
+
+      <PosTabPanel tab="margin" activeTab={activeTab}>
+      {/* S7: Margin & Exposure Monitor */}
+      <section className="os-pos-section" aria-labelledby="os-margin-heading">
+        <div className="row g-4">
+          <div className="col-12 col-xl-7">
+            <div className="os-pos-card h-100">
+              <div className="os-pos-card-head">
+                <div>
+                  <h2 id="os-margin-heading" className="os-pos-h2">
+                    <Shield size={18} aria-hidden /> Account Margin Health &amp; Limits
+                  </h2>
+                  <p className="os-pos-card-sub">
+                    Margin call and stop-out threshold markers. Warnings feed into T-14 Risk &amp; Guardrails.
+                  </p>
+                </div>
+              </div>
+
+              <div className="d-grid gap-3">
+                {marginHealthList.map((mh) => (
+                  <div
+                    key={mh.accountId}
+                    className="p-3 rounded border"
+                    style={{ background: "var(--os-bg)" }}
+                  >
+                    <div className="d-flex align-items-center justify-content-between mb-1">
+                      <div className="d-flex align-items-center gap-2">
+                        <BrokerBadge broker={mh.broker} label={mh.brokerName} />
+                        <strong>{mh.accountLabel}</strong>
+                        <EnvPill env={mh.environment} />
+                      </div>
+                      <span className={`os-health-pill is-${mh.status.toLowerCase()}`}>
+                        {mh.status}
+                      </span>
+                    </div>
+
+                    <div className="d-flex justify-content-between small text-secondary os-mono mt-1 mb-1">
+                      <span>Equity: {fmtUsd(mh.equity)} · Balance: {fmtUsd(mh.balance)}</span>
+                      <span>Level: <b className="text-body">{mh.marginLevelPct.toFixed(1)}%</b></span>
+                    </div>
+
+                    <div className="os-margin-bar">
+                      <span
+                        style={{
+                          width: `${Math.min(100, (mh.marginLevelPct / 600) * 100)}%`,
+                          background:
+                            mh.status === "Critical"
+                              ? "var(--os-down)"
+                              : mh.status === "Warning"
+                              ? "var(--os-warn)"
+                              : "var(--os-up)",
+                        }}
+                      />
+                    </div>
+
+                    <div className="d-flex justify-content-between small text-secondary">
+                      <span>Free: {fmtUsd(mh.freeMargin)} · Used: {fmtUsd(mh.usedMargin)}</span>
+                      <span>Call: {mh.marginCallThresholdPct}% · Stopout: {mh.stopOutLevelPct}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <Link to="/brokers" className="os-pos-link">
-              Full Broker Directory <ArrowRight size={14} aria-hidden />
-            </Link>
           </div>
 
-          <div className="os-table-wrap">
-            <table className="os-data-table os-matrix">
-              <thead>
-                <tr>
-                  <th>Broker</th>
-                  <th>Connection</th>
-                  <th>Modify SL/TP In-Place</th>
-                  <th>Partial Close Volume</th>
-                  <th>Reverse Position</th>
-                  <th>Hedging Allowed</th>
-                  <th>Position Stream</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <BrokerBadge broker="paper" label="OStrade Paper" />
-                  </td>
-                  <td>Local Simulation</td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Supported (local fill)</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Any volume</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Instant reverse</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Yes</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Direct push</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <BrokerBadge broker="exness" label="Exness MT5" />
-                  </td>
-                  <td>MetaApi Bridge</td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Supported</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ 0.01 lot step</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Via close + open</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Yes (Netting or Hedging)</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ WebSocket</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <BrokerBadge broker="deriv" label="Deriv" />
-                  </td>
-                  <td>WebSocket v3</td>
-                  <td>
-                    <span className="os-cap-check is-no">✕ Sell + re-buy contract</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-partial">⚠ Multiplier / Acc only</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Opposite proposal</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Yes (independent contracts)</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ WebSocket</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <BrokerBadge broker="alpaca" label="Alpaca" />
-                  </td>
-                  <td>REST v2 + Stream</td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Bracket replace</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Share level</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ Close + opposite</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-no">✕ FIFO rules apply</span>
-                  </td>
-                  <td>
-                    <span className="os-cap-check is-yes">✓ WebSocket</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="col-12 col-xl-5">
+            <details className="os-pos-muted-block">
+              <summary>
+                <Scale size={16} aria-hidden /> Concentration Exposure by Instrument
+                <span className="os-pos-muted-tag">Muted</span>
+              </summary>
+              <p className="os-pos-muted-sub">Top position exposures as a percentage of aggregate equity.</p>
+
+              <div className="os-table-wrap">
+                <table className="os-data-table os-matrix">
+                  <thead>
+                    <tr>
+                      <th>Instrument</th>
+                      <th>Account</th>
+                      <th>Notional</th>
+                      <th>% Equity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marginHealthList.map((mh) => (
+                      <tr key={mh.accountId}>
+                        <td>
+                          <strong className="os-mono">{mh.topExposureSymbol}</strong>
+                        </td>
+                        <td>{mh.accountLabel}</td>
+                        <td className="os-mono">{fmtUsd(mh.topExposureNotional)}</td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="os-mono fw-bold">{mh.topExposurePct.toFixed(1)}%</span>
+                            <div
+                              style={{
+                                width: 45,
+                                height: 5,
+                                borderRadius: 4,
+                                background: "var(--os-surface-3)",
+                                overflow: "hidden",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: `${Math.min(100, mh.topExposurePct * 1.5)}%`,
+                                  height: "100%",
+                                  background:
+                                    mh.topExposurePct > 50
+                                      ? "var(--os-down)"
+                                      : mh.topExposurePct > 30
+                                      ? "var(--os-warn)"
+                                      : "var(--os-brand)",
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
           </div>
         </div>
       </section>
+
+      </PosTabPanel>
 
       {/* S4: Position Detail Drawer */}
       {drawerPos && (
