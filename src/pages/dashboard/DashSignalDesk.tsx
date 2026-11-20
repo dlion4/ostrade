@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
 import {
+  CalendarDays,
+  LockKeyhole,
   ArrowUpRight,
   BookOpen,
   Cable,
@@ -25,7 +27,6 @@ import {
 import {
   GuardSection,
   ImportSection,
-  PerformanceSection,
 } from "@/components/signals/Oversight";
 import { getAccounts, getBrokerDefaults } from "@/services/dashboard";
 import { getMarketUniverse } from "@/services/markets";
@@ -35,11 +36,11 @@ import {
   getDeskSetup,
   getGuardLog,
   getSignals,
-  getSourcePerformance,
   type DeskSignal,
   type RouteOptions,
   type SourceKey,
 } from "@/services/signalDesk";
+import { PageHero } from "@/components/PageHero";
 import css from "@/styles/pages/dash-signal-desk.css?inline";
 
 export function DashSignalDeskPage() {
@@ -58,11 +59,6 @@ export function DashSignalDeskPage() {
   const universe = useQuery({
     queryKey: ["market-universe"],
     queryFn: getMarketUniverse,
-  });
-  const performance = useQuery({
-    queryKey: ["desk-performance"],
-    queryFn: getSourcePerformance,
-    refetchOnMount: "always",
   });
   const guards = useQuery({
     queryKey: ["signal-guards"],
@@ -112,7 +108,6 @@ export function DashSignalDeskPage() {
       "signals",
       "signal-guards",
       "signal-receipts",
-      "desk-performance",
       "positions",
       "records",
       "accounts",
@@ -167,36 +162,31 @@ export function DashSignalDeskPage() {
       className="page-dash-signal-desk os-desk-page"
       aria-labelledby="os-desk-title"
     >
-      <header className="os-desk-masthead">
-        <div>
-          <div className="os-workspace-label">
-            <i /> TRADING WORKSPACE
-          </div>
-          <h1 id="os-desk-title">
-            Signal Desk
-            <span className="os-title-period" aria-hidden="true">
-              .
-            </span>
-          </h1>
-          <p>Turn incoming signals into execution-ready orders.</p>
-        </div>
-        <div className="os-mast-actions">
-          <button
-            type="button"
-            className="os-soft-button"
-            onClick={() => setGuide(true)}
-          >
-            <BookOpen size={15} /> Desk guide
-          </button>
-          <button
-            type="button"
-            className="os-action-primary"
-            onClick={() => setImport("rows")}
-          >
-            <Upload size={15} /> Import signals
-          </button>
-        </div>
-      </header>
+      <PageHero
+        icon={Cable}
+        kicker="T-4 · SIGNAL DESK"
+        titleId="os-desk-title"
+        title={<>Signal Desk<span className="os-hero-accent">.</span></>}
+        lead="Turn incoming signals into execution-ready orders."
+        meta={
+          <>
+            <span className="os-hero-pill"><ShieldCheck size={13} aria-hidden /> LOCAL ENGINE</span>
+            <span><LockKeyhole size={13} aria-hidden /> External connections offline</span>
+            <span><CalendarDays size={13} aria-hidden /> EAT (UTC+3)</span>
+          </>
+        }
+        actions={
+          <>
+            <button type="button" className="btn os-hero-btn" onClick={() => setGuide(true)}>
+              <BookOpen size={15} aria-hidden /> Desk guide
+            </button>
+            <button type="button" className="btn os-hero-btn os-hero-primary" onClick={() => setImport("rows")}>
+              <Upload size={15} aria-hidden /> Import signals
+            </button>
+          </>
+        }
+      />
+
       {setup.isError || accts.isError || inbox.isError || universe.isError ? (
         <QueryError
           title="The local workspace could not be loaded"
@@ -304,17 +294,6 @@ export function DashSignalDeskPage() {
               halted={killSwitch === "flattened"}
             />
           </div>
-          {performance.isError ? (
-            <QueryError
-              title="Source performance could not be loaded"
-              onRetry={() => performance.refetch()}
-            />
-          ) : (
-            <PerformanceSection
-              feeds={performance.data ?? []}
-              refresh={refresh}
-            />
-          )}
           {guards.isError ? (
             <QueryError
               title="Guard log could not be loaded"

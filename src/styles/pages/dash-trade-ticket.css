@@ -525,95 +525,79 @@
   font-size: 0.94rem;
 }
 
-/* ── S6 Receipts & Modal ─────────────────────────────────── */
-.page-dash-trade-ticket .os-tt-empty {
-  padding: 2rem 1rem;
-  border-radius: 12px;
-  border: 1px dashed var(--os-hairline-strong);
-  background: var(--os-bg);
-  text-align: center;
-  display: grid;
-  place-items: center;
-  gap: 0.35rem;
-}
-.page-dash-trade-ticket .os-rec-pill {
-  padding: 0.2rem 0.55rem;
-  border-radius: 6px;
-  font-family: var(--os-font-mono);
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-.page-dash-trade-ticket .os-rec-pill.is-filled {
-  background: var(--os-up-soft);
-  color: var(--os-up);
-}
-.page-dash-trade-ticket .os-rec-pill.is-ready {
-  background: var(--os-warn-soft);
-  color: var(--os-warn);
-}
-.page-dash-trade-ticket .os-rec-pill.is-blocked {
-  background: var(--os-down-soft);
-  color: var(--os-down);
+.page-dash-trade-ticket .os-tt-account-select {
+  display: block;
+  max-width: 30rem;
 }
 
-.page-dash-trade-ticket .os-receipt-list {
-  display: grid;
-  gap: 0.5rem;
+/* ── Inline order review and status ───────────────────────── */
+.page-dash-trade-ticket #os-s4-title {
+  scroll-margin-top: 6rem;
 }
-.page-dash-trade-ticket .os-receipt-row {
+.page-dash-trade-ticket .os-tt-review-list {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0;
+  list-style: none;
+}
+.page-dash-trade-ticket .os-tt-review-list li {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.45rem 1rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 11px;
-  border: 1px solid var(--os-hairline);
+  gap: 0.4rem 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 9px;
   background: var(--os-bg);
+  border: 1px solid var(--os-hairline);
+  font-size: 0.83rem;
 }
-.page-dash-trade-ticket .os-receipt-row.is-filled {
-  border-left: 3px solid var(--os-up);
+.page-dash-trade-ticket :is(.os-tt-review-list,.os-tt-status) small {
+  display: block;
+  color: var(--os-text-2);
+  overflow-wrap: anywhere;
 }
-.page-dash-trade-ticket .os-receipt-row.is-ready {
-  border-left: 3px solid var(--os-warn);
-}
-.page-dash-trade-ticket .os-receipt-row.is-blocked {
-  border-left: 3px solid var(--os-down);
-}
-
-.page-dash-trade-ticket .os-tt-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1110;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-}
-.page-dash-trade-ticket .os-tt-modal {
-  width: min(100%, 580px);
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 1.4rem;
-  border-radius: var(--os-radius-lg);
-  background: var(--os-surface-1);
+.page-dash-trade-ticket .os-tt-status {
+  padding: 0.85rem;
   border: 1px solid var(--os-hairline-strong);
-  box-shadow: var(--os-shadow-lg);
-}
-.page-dash-trade-ticket .os-confirm-legs {
-  display: grid;
-  gap: 0.5rem;
-}
-.page-dash-trade-ticket .os-confirm-leg {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.65rem 0.8rem;
   border-radius: 10px;
   background: var(--os-bg);
-  border: 1px solid var(--os-hairline);
+  scroll-margin-block: 5.5rem 1rem;
+}
+.page-dash-trade-ticket .os-tt-status h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.page-dash-trade-ticket .os-tt-status-row {
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--os-hairline);
+  font-size: 0.83rem;
+}
+.page-dash-trade-ticket .os-tt-status-badge {
+  padding: 0.13rem 0.43rem;
+  border-radius: 5px;
+  background: var(--os-warn-soft);
+  color: var(--os-warn);
+  font-size: 0.69rem;
+  font-weight: 750;
+}
+.page-dash-trade-ticket .os-tt-status-badge.is-filled {
+  color: var(--os-up);
+  background: var(--os-up-soft);
+}
+.page-dash-trade-ticket .os-tt-status-badge.is-blocked {
+  color: var(--os-down);
+  background: var(--os-down-soft);
+}
+.page-dash-trade-ticket .os-tt-risk-details {
+  border-top: 1px solid var(--os-hairline);
+}
+.page-dash-trade-ticket .os-tt-risk-details summary {
+  padding: 0.7rem 0;
+  cursor: pointer;
+  color: var(--os-text-2);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 .page-dash-trade-ticket .os-fat-finger {
   padding: 0.75rem 0.9rem;
@@ -747,5 +731,55 @@
   }
   .page-dash-trade-ticket .os-risk-summary {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── Trade Ticket tabs ────────────────────────────────────── */
+.page-dash-trade-ticket .os-tt-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  margin-bottom: 1.1rem;
+  border: 1px solid var(--os-hairline);
+  border-radius: 12px;
+  background: var(--os-surface-1);
+}
+.page-dash-trade-ticket .os-tt-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--os-text-2);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.page-dash-trade-ticket .os-tt-tabs button svg {
+  flex: none;
+}
+.page-dash-trade-ticket .os-tt-tabs button[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--os-brand-ink) 32%, var(--os-hairline));
+  background: color-mix(in srgb, var(--os-brand-ink) 10%, var(--os-surface-1));
+  color: var(--os-brand-ink);
+}
+.page-dash-trade-ticket .os-tt-tabs button:hover:not([aria-selected="true"]) {
+  background: var(--os-surface-2);
+}
+.page-dash-trade-ticket .os-tt-tabs button:focus-visible {
+  outline: 2px solid var(--os-brand-ink);
+  outline-offset: 2px;
+}
+.page-dash-trade-ticket .os-tt-tabpanel[hidden] {
+  display: none;
+}
+@media (max-width: 575px) {
+  .page-dash-trade-ticket .os-tt-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

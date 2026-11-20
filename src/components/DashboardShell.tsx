@@ -114,7 +114,7 @@ export const DASH_NAV_GROUPS: { group: string; items: DashNavItem[] }[] = [
   {
     group: "Automation & Positions",
     items: [
-      { code: "T-5", label: "Automation Engine", to: "/dashboard/automation", icon: Workflow },
+      { code: "T-5", label: "Automation", to: "/dashboard/automation", icon: Workflow },
       { code: "T-6", label: "Trade Scheduler", to: "/dashboard/scheduler", icon: CalendarClock },
       { code: "T-7", label: "Positions & Orders", to: "/dashboard/positions", icon: Layers },
       { code: "T-8", label: "Records & Analytics", to: "/dashboard/records", icon: BarChart3 },
@@ -338,7 +338,7 @@ function DashboardShellInner() {
     },
   });
   const desk = deskPage !== null;
-  const deskTitle = deskPage === "automation" ? "Automation engine" : deskPage === "records" ? "Records & Analytics" : deskPage === "accounts" ? "Accounts & Broker Hub" : deskPage === "deposits" ? "Deposits" : deskPage === "withdrawals" ? "Withdrawals" : deskPage === "transfers" ? "Transfers & Ledger" : deskPage === "copilot" ? "AI Co-Pilot" : deskPage === "risk" ? "Risk & Guardrails" : deskPage === "notifications" ? "Notifications & Alerts" : deskPage === "settings" ? "Workspace Settings" : "Signal Desk";
+  const deskTitle = deskPage === "automation" ? "Automation" : deskPage === "records" ? "Records & Analytics" : deskPage === "accounts" ? "Accounts & Broker Hub" : deskPage === "deposits" ? "Deposits" : deskPage === "withdrawals" ? "Withdrawals" : deskPage === "transfers" ? "Transfers & Ledger" : deskPage === "copilot" ? "AI Co-Pilot" : deskPage === "risk" ? "Risk & Guardrails" : deskPage === "notifications" ? "Notifications & Alerts" : deskPage === "settings" ? "Workspace Settings" : "Signal Desk";
   const {
     activeAccountId,
     setActiveAccountId,

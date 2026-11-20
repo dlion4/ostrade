@@ -12,15 +12,18 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import {
+  CircleCheck,
+  CalendarDays,
+  FlaskConical,
   AlertTriangle,
   ArrowLeftRight,
   ArrowRight,
   ArrowUpDown,
+  BookOpen,
   CalendarClock,
   Check,
   CheckCircle2,
   Compass,
-  Info,
   Loader2,
   LockKeyhole,
   Minus,
@@ -28,16 +31,15 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
-  Send,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
   X,
-  XCircle,
   Zap,
 } from "lucide-react";
 import { TargetAccountPicker } from "@/components/TargetAccountPicker";
 import { CountUp } from "@/components/CountUp";
-import { BrokerBadge, EnvPill } from "@/components/DashboardShell";
+import { BrokerBadge } from "@/components/DashboardShell";
 import { QueryError } from "@/components/QueryError";
 import { useToast } from "@/components/Toast";
 import { useDashboardContext } from "@/context/DashboardContext";
@@ -63,18 +65,37 @@ import {
   type DerivContractType,
   type DerivDurationUnit,
   type FanoutLegInput,
-  type FanoutTicketResult,
+  type FanoutTicketInput,
+  type TicketReceiptLeg,
   type OrderType,
   type RecentTicket,
   type StopMode,
   type TimeInForce,
 } from "@/services/tradeTicket";
 import { carryOptions, previewRiskTickets, type RiskTicket } from "@/services/risk";
+import { PageHero } from "@/components/PageHero";
 import css from "@/styles/pages/dash-trade-ticket.css?inline";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
 const FAT_FINGER_USD = 500;
+const PAPER_MAIN = "acc-paper-main";
+
+const ticketTabs = [
+  { id: "order", label: "Order", icon: SlidersHorizontal },
+  { id: "deriv", label: "Deriv Builder", icon: Zap },
+  { id: "recent", label: "Recent Tickets", icon: BookOpen },
+  { id: "capabilities", label: "Broker Capabilities", icon: ShieldAlert },
+] as const;
+type TicketTab = (typeof ticketTabs)[number]["id"];
+
+function TicketTabPanel({ tab, activeTab, children }: { tab: TicketTab; activeTab: TicketTab; children: ReactNode }) {
+  return (
+    <div className="os-tt-tabpanel" id={`tt-panel-${tab}`} role="tabpanel" aria-labelledby={`tt-tab-${tab}`} hidden={tab !== activeTab}>
+      {children}
+    </div>
+  );
+}
 
 function Skel({ h = 18, w = "100%" }: { h?: number; w?: number | string }) {
   return <span className="os-skel" style={{ height: h, width: w }} aria-hidden />;
@@ -197,184 +218,6 @@ function calcRr(entry: number, sl: number, tp: number): string {
   const reward = Math.abs(tp - entry);
   if (risk <= 0) return "—";
   return `1 : ${(reward / risk).toFixed(2)}`;
-}
-
-/* ── Confirm & Execute Modal (S6) ────────────────────────── */
-
-function ConfirmTicketModal({
-  sym,
-  orderType,
-  side,
-  timeInForce,
-  comment,
-  legs,
-  accountsById,
-  totalRequiredMargin,
-  needsFatFingerConfirm,
-  softWarning,
-  submitting,
-  onConfirm,
-  onCancel,
-}: {
-  sym: MarketSymbol;
-  orderType: OrderType;
-  side: "BUY" | "SELL";
-  timeInForce: TimeInForce;
-  comment: string;
-  legs: FanoutLegInput[];
-  accountsById: Map<string, TradingAccount>;
-  totalRequiredMargin: number;
-  needsFatFingerConfirm: boolean;
-  submitting: boolean;
-  softWarning: boolean;
-  onConfirm: (reason?: string) => void;
-  onCancel: () => void;
-}) {
-  const [typed, setTyped] = useState("");
-  const [overrideReason, setOverrideReason] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (needsFatFingerConfirm) inputRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !submitting) onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [needsFatFingerConfirm, submitting, onCancel]);
-
-  const canProceed =
-    !submitting && (!overrideReason.trim() || overrideReason.trim().length >= 12) &&
-    (!needsFatFingerConfirm || typed.trim().toUpperCase() === "EXECUTE");
-
-  return (
-    <div
-      className="os-tt-modal-backdrop"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !submitting) onCancel();
-      }}
-    >
-      <div
-        className="os-tt-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="os-confirm-ticket-title"
-      >
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <div className="d-flex align-items-center gap-2">
-            <span className={`os-side-badge ${side === "BUY" ? "is-buy" : "is-sell"}`}>
-              {side}
-            </span>
-            <h2 id="os-confirm-ticket-title" className="h5 mb-0 os-mono">
-              Confirm Fan-Out · {sym.canonical}
-            </h2>
-          </div>
-          <button
-            type="button"
-            className="os-icon-btn"
-            disabled={submitting}
-            onClick={onCancel}
-            aria-label="Cancel confirmation"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <p className="small text-secondary mb-3">
-          {orderType} · TIF {timeInForce} · {legs.length} target account
-          {legs.length === 1 ? "" : "s"} · Est. total stake/margin{" "}
-          <strong className="os-mono">{fmtUsd(totalRequiredMargin)}</strong>
-          {comment ? ` · Comment "${comment}"` : ""}
-        </p>
-
-        <div className="os-confirm-legs mb-3">
-          {legs.map((leg) => {
-            const acc = accountsById.get(leg.accountId);
-            if (!acc) return null;
-            const bSym = mappedBrokerSymbol(sym, acc);
-            return (
-              <div key={leg.accountId} className="os-confirm-leg">
-                <div>
-                  <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <BrokerBadge broker={acc.broker} label={acc.brokerName} />
-                    <strong>{acc.label}</strong>
-                    <EnvPill env={acc.environment} />
-                  </div>
-                  <small className="os-mono text-secondary d-block mt-1">
-                    {bSym ? `${sym.canonical} → ${bSym}` : "UNMAPPED SYMBOL (WILL BLOCK)"} ·{" "}
-                    {leg.size} {sym.volumeUnit} @ {fmtPrice(leg.entry, sym.digits)}
-                  </small>
-                </div>
-                <div className="text-end os-mono small">
-                  <div className="os-down">SL {leg.sl ? fmtPrice(leg.sl, sym.digits) : "—"}</div>
-                  <div className="os-up">TP {leg.tp ? fmtPrice(leg.tp, sym.digits) : "—"}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {needsFatFingerConfirm && (
-          <div className="os-fat-finger mb-3">
-            <label htmlFor="os-execute-phrase" className="d-block small fw-bold mb-1">
-              <AlertTriangle size={14} className="me-1" aria-hidden />
-              Total stake/margin exceeds ${FAT_FINGER_USD} — type{" "}
-              <code className="os-mono">EXECUTE</code> to confirm
-            </label>
-            <input
-              ref={inputRef}
-              id="os-execute-phrase"
-              className="form-control os-mono"
-              placeholder="EXECUTE"
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-            />
-          </div>
-        )}
-
-        {softWarning && <label className="d-block small mb-3">Optional soft shield override reason
-          <input className="form-control mt-1" value={overrideReason} maxLength={240} onChange={e=>setOverrideReason(e.target.value)} placeholder="At least 12 characters; no credentials" />
-          <span className="text-secondary">This cannot bypass any hard block. Reasons are recorded in the risk audit.</span>
-        </label>}
-        <div className="os-tt-note is-info mb-3">
-          <Info size={15} aria-hidden />
-          <span>
-            Paper accounts execute locally into Positions &amp; Records. Non-paper
-            broker legs resolve cleanly to{" "}
-            <strong>Ready — executes when the backend is connected</strong>.
-          </span>
-        </div>
-
-        <div className="d-flex justify-content-end gap-2">
-          <button
-            type="button"
-            className="os-btn os-btn-ghost os-btn-sm"
-            disabled={submitting}
-            onClick={onCancel}
-          >
-            Cancel (Esc)
-          </button>
-          <button
-            type="button"
-            className="os-btn os-btn-primary os-btn-sm"
-            disabled={!canProceed}
-            onClick={() => onConfirm(overrideReason.trim() || undefined)}
-          >
-            {submitting ? (
-              <>
-                <Loader2 size={15} className="os-spin" aria-hidden /> Dispatching fan-out…
-              </>
-            ) : (
-              <>
-                <Zap size={15} aria-hidden /> Submit {legs.length} Leg
-                {legs.length === 1 ? "" : "s"}
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /* ── Recent Tickets Table (S7 - TanStack Table) ──────────── */
@@ -500,8 +343,10 @@ function RecentTicketsSection({
     [onRepeat, onReverse, onSchedule, scheduling]
   );
 
+  // A new array on every render re-triggers TanStack Table row-model resets.
+  const visibleTickets = useMemo(() => tickets.slice(0, 12), [tickets]);
   const table = useReactTable({
-    data: tickets.slice(0, 12),
+    data: visibleTickets,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -561,6 +406,9 @@ export function DashTradeTicketPage() {
   const qc = useQueryClient();
   const { activeAccountId, fanoutAccountIds, globalMode, killSwitch } = useDashboardContext();
 
+  const [activeTab, setActiveTab] = useState<TicketTab>("order");
+  const [orderFocus, setOrderFocus] = useState<"review" | "tab" | null>(null);
+  const tabRefs = useRef<Partial<Record<TicketTab, HTMLButtonElement | null>>>({});
   const accountsQ = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const defaultsQ = useQuery({queryKey:["broker-defaults"],queryFn:getBrokerDefaults});
   const universeQ = useQuery({ queryKey: ["market-universe"], queryFn: getMarketUniverse });
@@ -578,30 +426,36 @@ export function DashTradeTicketPage() {
   );
 
   // S1 Account Multi-Select & Allocation state
-  const [selectedAccIds, setSelectedAccIds] = useState<string[]>([
-    "acc-paper-main",
-    "acc-exness-trial",
-  ]);
+  const [selectedAccIds, setSelectedAccounts] = useState<string[]>(() =>
+    fanoutAccountIds.length ? fanoutAccountIds : [activeAccountId !== "all" ? activeAccountId : PAPER_MAIN]
+  );
+  const accountEdited = useRef(false);
+  const tifEdited = useRef(false);
+  const draftHydrated = useRef(false);
+  const setSelectedAccIds = (ids: string[]) => {
+    accountEdited.current = true;
+    setSelectedAccounts(ids);
+  };
   const [allocMode, setAllocMode] = useState<AllocationMode>("same");
   const [customSizes, setCustomSizes] = useState<Record<string, number>>({});
 
   // S2 Instrument state
   const [symbolSearch, setSymbolSearch] = useState("");
-  const [canonical, setCanonical] = useState("XAUUSD");
+  const [canonical, setCanonical] = useState("EURUSD");
   const [stagedSourceNote, setStagedSourceNote] = useState<string | null>(null);
 
   // S3 Order Builder state
   const [orderType, setOrderType] = useState<OrderType>("Market");
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
-  const [baseSize, setBaseSize] = useState<string>("0.15");
+  const [baseSize, setBaseSize] = useState<string>("0.10");
   const [limitPrice, setLimitPrice] = useState<string>("");
   const [stopTriggerPrice, setStopTriggerPrice] = useState<string>("");
   const [stopMode, setStopMode] = useState<StopMode>("pips");
-  const [slInput, setSlInput] = useState<string>("75");
-  const [tpInput, setTpInput] = useState<string>("160");
+  const [slInput, setSlInput] = useState<string>("40");
+  const [tpInput, setTpInput] = useState<string>("70");
   const [timeInForce, setTimeInForce] = useState<TimeInForce>("GTC");
   const [carry, setCarry] = useState<NonNullable<RiskTicket["carry"]>>("Intraday");
-  const [comment, setComment] = useState<string>("OStrade fan-out");
+  const [comment, setComment] = useState<string>("");
 
   // S5 Deriv Contract Builder state
   const [showDerivPreview, setShowDerivPreview] = useState(false);
@@ -613,9 +467,12 @@ export function DashTradeTicketPage() {
   const [derivCancel, setDerivCancel] = useState<boolean>(true);
   const [derivGrowth, setDerivGrowth] = useState<number>(2);
 
-  // S6 Confirm & Receipts state
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [lastReceipts, setLastReceipts] = useState<FanoutTicketResult | null>(null);
+  const [executePhrase, setExecutePhrase] = useState("");
+  const [overrideReason, setOverrideReason] = useState("");
+  const [legProgress, setLegProgress] = useState<TicketReceiptLeg[]>([]);
+  const reviewRef = useRef<HTMLHeadingElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const submissionInFlight = useRef(false);
 
   useEffect(() => {
     const prev = document.title;
@@ -625,32 +482,25 @@ export function DashTradeTicketPage() {
     };
   }, []);
 
+  // Consume a Markets handoff only once, including under React Strict Mode.
+  useEffect(() => {
+    if (draftHydrated.current) return;
+    draftHydrated.current = true;
+    const draft = consumeStagedTicketDraft();
+    if (!draft) return;
+    setCanonical(draft.canonical);
+    setSide(draft.side);
+    if (draft.accountId) setSelectedAccIds([draft.accountId]);
+    setStagedSourceNote(`Prefilled from ${draft.source}: ${draft.side} ${draft.canonical} @ ${draft.price}`);
+  }, []);
+
   useEffect(() => {
     if (!defaultsQ.data) return;
-    setTimeInForce(tif => tif === 'GTC' ? defaultsQ.data.tif : tif);
-    if (!fanoutAccountIds.length && activeAccountId === 'all' && defaultsQ.data.manual) {
-      setSelectedAccIds(ids => ids.length === 2 && ids[0] === 'acc-paper-main' && ids[1] === 'acc-exness-trial' ? [defaultsQ.data.manual] : ids);
+    if (!tifEdited.current) setTimeInForce(defaultsQ.data.tif);
+    if (!accountEdited.current && !fanoutAccountIds.length && activeAccountId === "all" && defaultsQ.data.manual) {
+      setSelectedAccounts([defaultsQ.data.manual]);
     }
   }, [defaultsQ.data, activeAccountId, fanoutAccountIds]);
-
-  // Hydrate draft handed off from T-2 Markets (if any) or sync with single active account
-  useEffect(() => {
-    const draft = consumeStagedTicketDraft();
-    if (draft) {
-      setCanonical(draft.canonical);
-      setSide(draft.side);
-      if (draft.accountId) setSelectedAccIds([draft.accountId]);
-      setStagedSourceNote(
-        `Prefilled from ${draft.source}: ${draft.side} ${draft.canonical} @ ${draft.price}`
-      );
-      toast(`Ticket prefilled from ${draft.source}: ${draft.canonical}`);
-    } else if (fanoutAccountIds.length) {
-      setSelectedAccIds(fanoutAccountIds);
-    } else if (activeAccountId !== "all") {
-      setSelectedAccIds([activeAccountId]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const universe = universeQ.data ?? [];
   const activeSym = useMemo(
@@ -705,11 +555,11 @@ export function DashTradeTicketPage() {
         dealCancellation: derivCancel,
         growthRatePct: derivGrowth,
       }),
-    enabled: hasDerivSelected || showDerivPreview,
+    enabled: activeTab === "deriv" && (hasDerivSelected || showDerivPreview),
   });
 
   // Compute per-account allocations & bracket levels
-  const parsedBaseSize = Math.max(0.001, parseFloat(baseSize) || 0.1);
+  const parsedBaseSize = Number(baseSize);
   const baseEquity =
     selectedAccounts[0]?.equity && selectedAccounts[0].equity > 0
       ? selectedAccounts[0].equity
@@ -718,8 +568,7 @@ export function DashTradeTicketPage() {
   const entryPrice = useMemo(() => {
     if (!activeSym) return 0;
     if (orderType === "Market") return side === "BUY" ? activeSym.ask : activeSym.bid;
-    const p = parseFloat(limitPrice);
-    return Number.isFinite(p) && p > 0 ? p : activeSym.ask;
+    return Number(limitPrice);
   }, [activeSym, orderType, side, limitPrice]);
 
   const { sl: computedSl, tp: computedTp } = useMemo(
@@ -806,28 +655,61 @@ export function DashTradeTicketPage() {
 
   // Read-only checklist; actual admission always refreshes the policy and records the decision.
   const ticketsForRisk: RiskTicket[] = activeSym ? legs.map(leg=>({...leg,symbol:activeSym.canonical,side,channel:"Manual",carry})) : [];
-  const preflight = useQuery({queryKey:["risk","ticket-preview",killSwitch,ticketsForRisk],queryFn:()=>previewRiskTickets(ticketsForRisk),enabled:ticketsForRisk.length>0});
+  const preflight = useQuery({queryKey:["risk","ticket-preview",killSwitch,ticketsForRisk],queryFn:()=>previewRiskTickets(ticketsForRisk),enabled:ticketsForRisk.length>0 && legs.every(leg=>Number.isFinite(leg.size)&&leg.size>0&&Number.isFinite(leg.entry)&&leg.entry>0)});
   const guardrailChecks = (preflight.data??[]).flatMap(row=>row.checks.map(c=>({
     id:`${row.accountId}:${c.id}`, label:c.label, pass:c.decision==="PASS", note:`${row.scope} · ${c.detail}${c.decision==="BLOCK"&&c.overridable?" Manual review permitted.":""}`,
   })));
   const softWarning = preflight.data?.some(row=>row.checks.some(c=>c.decision==="BLOCK"&&c.overridable)&&!row.checks.some(c=>c.decision==="BLOCK"&&!c.overridable))??false;
 
-  // Mutations
+  const invalidDraft = !Number.isFinite(parsedBaseSize) || parsedBaseSize <= 0
+    ? "Enter a size greater than zero."
+    : orderType !== "Market" && (!Number.isFinite(entryPrice) || entryPrice <= 0)
+      ? "Enter a price greater than zero."
+      : orderType === "Stop-Limit" && (!Number.isFinite(Number(stopTriggerPrice)) || Number(stopTriggerPrice) <= 0)
+        ? "Enter a stop trigger greater than zero."
+        : "";
+  const hasPaper = selectedAccounts.some(a => a.environment === "paper");
   const fanoutMut = useMutation({
-    mutationFn: submitFanoutTicket,
-    onSuccess: (res) => {
-      setLastReceipts(res);
-      setConfirmOpen(false);
-      qc.invalidateQueries({ queryKey: ["positions"] });
-      qc.invalidateQueries({ queryKey: ["accounts"] });
-      qc.invalidateQueries({ queryKey: ["records"] });
-      qc.invalidateQueries({ queryKey: ["recent-tickets"] });
-      qc.invalidateQueries({ queryKey: ["risk"] });
-      toast(
-        `${res.filledCount} filled · ${res.readyCount} backend preview · ${res.blockedCount} blocked`
-      );
+    mutationFn: (input: FanoutTicketInput) => submitFanoutTicket(input, (result) => {
+      setLegProgress(previous => [...previous, result]);
+    }),
+    onSettled: () => {
+      submissionInFlight.current = false;
+      for (const key of ["positions", "consolidated-positions", "accounts", "records", "recent-tickets", "risk"]) {
+        void qc.invalidateQueries({ queryKey: [key] });
+      }
     },
   });
+  const canPlace = !!activeSym && legs.length > 0 && !invalidDraft && !!preflight.data && !fanoutMut.isPending
+    && (!needsFatFingerConfirm || executePhrase.trim() === "EXECUTE")
+    && (!softWarning || !overrideReason.trim() || overrideReason.trim().length >= 12);
+  useEffect(() => {
+    if (activeTab !== "order" || !orderFocus) return;
+    const target = orderFocus === "review" ? reviewRef.current : tabRefs.current.order;
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: orderFocus === "review" ? "start" : "nearest" });
+    setOrderFocus(null);
+  }, [activeTab, orderFocus]);
+
+  const jumpToReview = () => {
+    setActiveTab("order");
+    setOrderFocus("review");
+  };
+  const handlePlaceTrade = () => {
+    if (!canPlace || !activeSym || submissionInFlight.current) return;
+    submissionInFlight.current = true;
+    setLegProgress([]);
+    fanoutMut.mutate({
+      canonical: activeSym.canonical, orderType, side, timeInForce, comment, carry,
+      overrideReason: softWarning ? overrideReason.trim() || undefined : undefined, legs,
+    });
+    setExecutePhrase("");
+    setOverrideReason("");
+    requestAnimationFrame(() => {
+      statusRef.current?.focus({preventScroll:true});
+      statusRef.current?.scrollIntoView({block:"nearest"});
+    });
+  };
 
   const scheduleMut = useMutation({
     mutationFn: (t: RecentTicket) =>
@@ -847,42 +729,15 @@ export function DashTradeTicketPage() {
     },
   });
 
-  const handleOpenConfirm = () => {
-    if (legs.length === 0) {
-      toast("Select at least one target account in S1");
-      return;
-    }
-    setConfirmOpen(true);
-  };
-
-  // Keyboard shortcut: Ctrl+Enter opens confirm modal
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !confirmOpen) {
-        e.preventDefault();
-        handleOpenConfirm();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
-
   const filteredSymbols = useMemo(() => {
     if (!symbolSearch.trim()) return universe.slice(0, 12);
     return universe.filter((s) => matchesSymbolQuery(s, symbolSearch)).slice(0, 12);
   }, [universe, symbolSearch]);
 
   const toggleAccountSelection = (id: string) => {
-    setSelectedAccIds((cur) => {
-      if (cur.includes(id)) {
-        if (cur.length === 1) {
-          toast("Keep at least one target account selected");
-          return cur;
-        }
-        return cur.filter((x) => x !== id);
-      }
-      return [...cur, id];
-    });
+    setSelectedAccIds(selectedAccIds.includes(id)
+      ? selectedAccIds.filter(accountId => accountId !== id)
+      : [...selectedAccIds, id]);
   };
 
   const applyTicketPreset = (t: RecentTicket, flipSide: boolean) => {
@@ -900,13 +755,13 @@ export function DashTradeTicketPage() {
       .filter((id) => accountsById.has(id));
     if (validIds.length > 0) setSelectedAccIds(validIds);
     setComment(t.comment);
-    setLastReceipts(null);
     toast(
       flipSide
         ? `Reversed ${t.canonical} to ${t.side === "BUY" ? "SELL" : "BUY"}`
         : `Loaded ${t.canonical} ticket into builder`
     );
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setActiveTab("order");
+    setOrderFocus("tab");
   };
 
   if (accountsQ.isError || universeQ.isError) {
@@ -928,40 +783,35 @@ export function DashTradeTicketPage() {
   return (
     <main className="page-dash-trade-ticket" aria-labelledby="os-tt-title">
       {/* Header */}
-      <header className="os-tt-section os-tt-intro">
-        <div>
-          <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
-            <span className="os-tt-eyebrow">T-3 · MULTI-ACCOUNT FAN-OUT</span>
-            <span className="os-tt-static">
-              STATIC SNAPSHOT · NO LIVE TICKING · CTRL+ENTER TO SUBMIT
-            </span>
-          </div>
-          <h1 id="os-tt-title" className="os-tt-h1">
-            Trade Ticket
-          </h1>
-          <p className="os-tt-lead">
-            Build an order once — fire it to Paper, Deriv, Exness/MT5, or Alpaca
-            simultaneously with live risk sizing, Deriv contract proposals, and
-            execution receipts.
-          </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
-          <Link to="/dashboard/markets" className="os-btn os-btn-ghost os-btn-sm">
-            <Compass size={15} aria-hidden /> Markets (T-2)
-          </Link>
-          <Link to="/dashboard/signals" className="os-btn os-btn-ghost os-btn-sm">
-            Signal Desk (T-4)
-          </Link>
-          <button
-            type="button"
-            className="os-btn os-btn-primary os-btn-sm"
-            disabled={loading || !activeSym}
-            onClick={handleOpenConfirm}
-          >
-            <Zap size={15} aria-hidden /> Review &amp; Submit ({legs.length})
-          </button>
-        </div>
-      </header>
+      <PageHero
+        icon={Zap}
+        kicker="T-3 · ORDER ENTRY"
+        titleId="os-tt-title"
+        title="Trade Ticket"
+        lead="Choose an account and build your order. Review it, place the trade, and watch its status here. Paper trades simulate locally; broker orders are preview-only."
+        meta={
+          <>
+            <span className="os-hero-pill"><FlaskConical size={13} aria-hidden /> LOCAL SIMULATION</span>
+            <span><CalendarDays size={13} aria-hidden /> EAT (UTC+3)</span>
+            <span><CircleCheck size={13} aria-hidden /> Fixed market snapshot</span>
+          </>
+        }
+        actions={
+          <>
+            <Link to="/dashboard/markets" className="btn os-hero-btn"><Compass size={15} aria-hidden /> Markets (T-2)</Link>
+            <Link to="/dashboard/signals" className="btn os-hero-btn">Signal Desk (T-4)</Link>
+            <button
+              type="button"
+              className="btn os-hero-btn os-hero-primary"
+              disabled={loading || !activeSym}
+              onClick={jumpToReview}
+            >
+              <Zap size={15} aria-hidden /> Review order
+            </button>
+          </>
+        }
+      />
+
 
       {stagedSourceNote && (
         <div className="os-tt-section os-tt-note is-info" role="status">
@@ -986,92 +836,137 @@ export function DashTradeTicketPage() {
         </div>
       ) : (
         <>
+          <div className="os-tt-tabs" role="tablist" aria-label="Trade Ticket sections">
+            {ticketTabs.map(({ id, label, icon: Icon }, index) => (
+              <button
+                key={id}
+                ref={node => { tabRefs.current[id] = node; }}
+                id={`tt-tab-${id}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === id}
+                aria-controls={`tt-panel-${id}`}
+                tabIndex={activeTab === id ? 0 : -1}
+                onClick={() => setActiveTab(id)}
+                onKeyDown={event => {
+                  const last = ticketTabs.length - 1;
+                  const nextIndex = event.key === "ArrowRight" ? (index === last ? 0 : index + 1)
+                    : event.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
+                    : event.key === "Home" ? 0 : event.key === "End" ? last : null;
+                  if (nextIndex === null) return;
+                  event.preventDefault();
+                  const next = ticketTabs[nextIndex].id;
+                  setActiveTab(next);
+                  tabRefs.current[next]?.focus();
+                }}
+              >
+                <Icon size={16} aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <TicketTabPanel tab="order" activeTab={activeTab}>
           {/* S1 · Account Multi-Select */}
           <section className="os-tt-section" aria-labelledby="os-s1-title">
             <div className="os-tt-card">
               <SectionHead
                 id="os-s1-title"
-                eyebrow="S1 · ACCOUNT MULTI-SELECT"
-                title={`Target Accounts (${selectedAccounts.length} selected)`}
-                sub="Choose one account or fan out across multiple brokers. Allocation mode scales sizes automatically."
-                right={
-                  <div className="d-flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="os-tt-chip-btn"
-                      onClick={() =>
-                        setSelectedAccIds(
-                          selectableAccounts
-                            .filter((a) => a.connected)
-                            .map((a) => a.id)
-                        )
-                      }
-                    >
-                      Select all connected
-                    </button>
-                    <button
-                      type="button"
-                      className="os-tt-chip-btn"
-                      onClick={() =>
-                        setSelectedAccIds(
-                          selectableAccounts
-                            .filter((a) => a.environment === "demo" || a.environment === "paper")
-                            .map((a) => a.id)
-                        )
-                      }
-                    >
-                      Select demo/paper
-                    </button>
-                    <button
-                      type="button"
-                      className="os-tt-chip-btn"
-                      onClick={() =>
-                        setSelectedAccIds(
-                          selectableAccounts
-                            .filter((a) => a.environment === "live-ready")
-                            .map((a) => a.id)
-                        )
-                      }
-                    >
-                      Select live-ready
-                    </button>
-                  </div>
-                }
+                eyebrow="S1 · ACCOUNT"
+                title="Trading account"
+                sub="Choose where this order goes. Paper fills locally; other accounts only preview the order."
               />
-
-              <TargetAccountPicker accounts={selectableAccounts} selected={selectedAccIds} onToggle={toggleAccountSelection} />
-
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-2 border-top">
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                  <span className="os-tt-label mb-0">Allocation Mode:</span>
-                  <div
-                    className="os-tt-seg"
-                    role="group"
-                    aria-label="Allocation mode"
-                  >
-                    {(
-                      [
-                        ["same", "Same size on each"],
-                        ["equity", "Scale by equity %"],
-                        ["custom", "Custom per account"],
-                      ] as const
-                    ).map(([id, lbl]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        className={allocMode === id ? "is-on" : ""}
-                        onClick={() => setAllocMode(id)}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <span className="small text-secondary">
-                  Global mode:{" "}
-                  <strong className="os-mono">{globalMode.toUpperCase()}</strong>
-                </span>
+              <div className="os-tt-account-select mb-2">
+                <label htmlFor="tt-account" className="os-tt-label">Account</label>
+                <select id="tt-account" className="form-select" value={selectedAccounts.length === 1 ? selectedAccounts[0].id : selectedAccounts.length > 1 ? "multiple" : ""}
+                  onChange={e => {
+                    setSelectedAccIds([e.target.value]);
+                    setAllocMode("same");
+                  }}>
+                  {selectedAccounts.length === 0 && <option value="" disabled>Choose an account</option>}
+                  {selectedAccounts.length > 1 && <option value="multiple" disabled>{selectedAccounts.length} accounts selected</option>}
+                  {selectableAccounts.map(a => <option key={a.id} value={a.id}>{a.label} · {a.environment === "paper" ? "Paper" : "Preview"}</option>)}
+                </select>
               </div>
+              <details className="os-tt-risk-details mt-2">
+                <summary>Multiple accounts and allocation</summary>
+                <div className="d-flex flex-wrap gap-2 mb-2">
+                  <button
+                    type="button"
+                    className="os-tt-chip-btn"
+                    onClick={() =>
+                      setSelectedAccIds(
+                        selectableAccounts
+                          .filter((a) => a.connected)
+                          .map((a) => a.id)
+                      )
+                    }
+                  >
+                    Select all connected
+                  </button>
+                  <button
+                    type="button"
+                    className="os-tt-chip-btn"
+                    onClick={() =>
+                      setSelectedAccIds(
+                        selectableAccounts
+                          .filter((a) => a.environment === "demo" || a.environment === "paper")
+                          .map((a) => a.id)
+                      )
+                    }
+                  >
+                    Select demo/paper
+                  </button>
+                  <button
+                    type="button"
+                    className="os-tt-chip-btn"
+                    onClick={() =>
+                      setSelectedAccIds(
+                        selectableAccounts
+                          .filter((a) => a.environment === "live-ready")
+                          .map((a) => a.id)
+                      )
+                    }
+                  >
+                    Select live-ready
+                  </button>
+                </div>
+
+                <TargetAccountPicker accounts={selectableAccounts} selected={selectedAccIds} onToggle={toggleAccountSelection} />
+
+                <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-2 border-top">
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <span className="os-tt-label mb-0">Allocation Mode:</span>
+                    <div
+                      className="os-tt-seg"
+                      role="group"
+                      aria-label="Allocation mode"
+                    >
+                      {(
+                        [
+                          ["same", "Same size on each"],
+                          ["equity", "Scale by equity %"],
+                          ["custom", "Custom per account"],
+                        ] as const
+                      ).map(([id, lbl]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          className={allocMode === id ? "is-on" : ""}
+                          onClick={() => setAllocMode(id)}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <span className="small text-secondary">
+                    Global mode:{" "}
+                    <strong className="os-mono">{globalMode.toUpperCase()}</strong>
+                  </span>
+                </div>
+
+              </details>
 
               {hasLiveSelected && globalMode === "paper" && (
                 <div className="os-tt-note is-warn mt-3" role="alert">
@@ -1119,10 +1014,7 @@ export function DashTradeTicketPage() {
                     role="tab"
                     aria-selected={s.canonical === canonical}
                     className={`os-sym-pill ${s.canonical === canonical ? "is-active" : ""}`}
-                    onClick={() => {
-                      setCanonical(s.canonical);
-                      setLastReceipts(null);
-                    }}
+                    onClick={() => setCanonical(s.canonical)}
                   >
                     <span className="os-mono fw-bold">{s.canonical}</span>
                     <small className={s.changePct >= 0 ? "os-up" : "os-down"}>
@@ -1358,9 +1250,10 @@ export function DashTradeTicketPage() {
                         id="tt-tif"
                         className="form-select os-mono"
                         value={timeInForce}
-                        onChange={(e) =>
-                          setTimeInForce(e.target.value as TimeInForce)
-                        }
+                        onChange={(e) => {
+                          tifEdited.current = true;
+                          setTimeInForce(e.target.value as TimeInForce);
+                        }}
                       >
                         <option value="GTC">GTC (Good Til Cancel)</option>
                         <option value="DAY" disabled={hasDerivSelected}>
@@ -1538,96 +1431,136 @@ export function DashTradeTicketPage() {
               {/* S4 Risk Preview & Guardrail Strip */}
               <div className="col-12 col-xl-5">
                 <div className="os-tt-card h-100 d-flex flex-column">
-                  <SectionHead
-                    id="os-s4-title"
-                    eyebrow="S4 · RISK PREVIEW & GUARDRAILS"
-                    title="Pre-Trade Margin & Rule Checks"
-                    sub="Updates immediately from your ticket size and active account equity."
-                  />
+                  <div className="os-tt-eyebrow">REVIEW → PLACE TRADE → SEE STATUS</div>
+                  <h2 id="os-s4-title" ref={reviewRef} tabIndex={-1} className="os-tt-h2 mb-2">Review your order</h2>
+                  <p className="os-tt-sub mb-3"><strong>{side} {activeSym.canonical}</strong> · {orderType} · {timeInForce}</p>
+                  {legs.length ? <ul className="os-tt-review-list mb-3">
+                    {legs.map(leg => {
+                      const account = accountsById.get(leg.accountId)!;
+                      return <li key={leg.accountId}>
+                        <div><strong>{account.label}</strong><small>{account.environment === "paper" ? "Paper simulator" : "Broker preview only"}</small></div>
+                        <div className="text-end"><strong>{leg.size} {activeSym.volumeUnit} @ {fmtPrice(leg.entry, activeSym.digits)}</strong><small>SL {fmtPrice(leg.sl, activeSym.digits)} · TP {fmtPrice(leg.tp, activeSym.digits)}</small></div>
+                      </li>;
+                    })}
+                  </ul> : <p className="os-tt-note mb-3">Choose at least one account to place an order.</p>}
+                  {orderType !== "Market" && hasPaper && <p className="os-tt-sub mb-3">Paper simulates a fill at the reviewed price. This preview does not monitor resting orders.</p>}
+                  {invalidDraft && <p className="os-tt-note is-warn mb-3" role="alert">{invalidDraft}</p>}
+                  {!invalidDraft && legs.length > 0 && (preflight.isError
+                    ? <p role="alert" className="small">Risk check unavailable. <button type="button" className="os-tt-chip-btn" onClick={()=>void preflight.refetch()}>Retry risk check</button></p>
+                    : preflight.isPending ? <p role="status" className="os-tt-sub mb-3">Checking risk limits…</p>
+                    : preflight.data?.some(row => row.checks.some(check => check.decision === "BLOCK"))
+                      ? <p className="os-tt-note is-warn mb-3"><ShieldAlert size={16} aria-hidden /> Risk checks found a potential block. See Risk details below for the reason.</p> : null)}
+                  {needsFatFingerConfirm && <label className="os-fat-finger d-block small mb-3">
+                    <AlertTriangle size={14} className="me-1" aria-hidden /> Estimated margin exceeds ${FAT_FINGER_USD}. Type <strong>EXECUTE</strong> to confirm.
+                    <input className="form-control os-mono mt-1" value={executePhrase} onChange={e=>setExecutePhrase(e.target.value)} autoComplete="off" />
+                  </label>}
+                  {softWarning && <label className="d-block small mb-3">Optional reason to override a soft guard
+                    <input className="form-control mt-1" value={overrideReason} maxLength={240} onChange={e=>setOverrideReason(e.target.value)} placeholder="At least 12 characters" />
+                    <span className="text-secondary">Cannot bypass hard blocks. The reason is logged in the risk audit.</span>
+                  </label>}
+                  <button type="button" className="os-btn os-btn-primary os-btn-lg w-100" disabled={!canPlace} onClick={handlePlaceTrade}>
+                    {fanoutMut.isPending ? <Loader2 size={17} className="os-spin" aria-hidden /> : <Zap size={17} aria-hidden />}
+                    {fanoutMut.isPending ? "Working on your order…" : legs.length && !hasPaper ? "Preview broker order" : "Place trade"}
+                  </button>
+                  {fanoutMut.variables && <div ref={statusRef} tabIndex={-1} className="os-tt-status mt-3" aria-labelledby="tt-trade-status-title">
+                    <h3 id="tt-trade-status-title">Trade status</h3>
+                    <p className="os-tt-sub mb-2">{fanoutMut.variables.side} {fanoutMut.variables.canonical} · {fanoutMut.variables.orderType}</p>
+                    <div role="status">
+                      {fanoutMut.variables.legs.map(leg => {
+                        const result = legProgress.find(row => row.accountId === leg.accountId);
+                        const account = accountsById.get(leg.accountId);
+                        return <div className="os-tt-status-row" key={leg.accountId}>
+                          <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <strong>{result?.accountLabel ?? account?.label ?? leg.accountId}</strong>
+                            <span className={`os-tt-status-badge is-${result?.status ?? (fanoutMut.isError ? "blocked" : "pending")}`}>
+                              {result?.status === "filled" ? "Filled · Paper" : result?.status === "ready" ? "Preview only" : result?.status === "blocked" ? "Blocked" : fanoutMut.isError ? "Not confirmed" : "Pending"}
+                            </span>
+                          </div>
+                          <small>{result?.status === "filled" ? <><strong className="os-mono">{result.ticketId}</strong> · Filled at {result.fillPrice} · Position opened</> : result?.message ?? (fanoutMut.isError ? "Check Positions before trying again." : account?.environment === "paper" ? "Waiting for the Paper simulator." : "Checking the broker preview. Nothing will be sent.")}</small>
+                        </div>;
+                      })}
+                    </div>
+                    {fanoutMut.isError && <p className="os-tt-sub mt-2" role="alert">{fanoutMut.error?.message} Review any completed accounts above before trying again.</p>}
+                    {legProgress.some(r=>r.status === "filled") && <Link to="/dashboard/positions" className="os-tt-link mt-2"><CheckCircle2 size={15} aria-hidden /> View open positions <ArrowRight size={14} aria-hidden /></Link>}
+                  </div>}
 
-                  <div className="os-risk-summary mb-3">
-                    <div>
-                      <span>Total Est. Margin / Stake</span>
-                      <strong className="os-mono">
-                        $<CountUp value={Math.round(totalRequiredMargin)} />
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Legs Ready</span>
-                      <strong className="os-mono">
-                        {preflight.data?.filter(row=>row.checks.every(c=>c.decision==="PASS")).length ?? "—"} / {riskRows.length}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Asset Class Exposure</span>
-                      <strong>{activeSym.assetClass}</strong>
-                    </div>
-                  </div>
-
-                  <div className="os-risk-accounts mb-3">
-                    {riskRows.map((r) => (
-                      <div key={r.acc.id} className="os-risk-acc-row">
-                        <div className="d-flex justify-content-between align-items-center mb-1">
-                          <strong>{r.acc.label}</strong>
-                          <span className="os-mono small">
-                            Margin {r.acc.marginUsedPct}% →{" "}
-                            <b
-                              className={
-                                r.resultingMarginPct > 80
-                                  ? "os-down"
-                                  : r.resultingMarginPct > 60
-                                    ? "os-warn"
-                                    : "os-up"
-                              }
-                            >
-                              {r.resultingMarginPct}%
-                            </b>
-                          </span>
-                        </div>
-                        <div className="d-flex justify-content-between small text-secondary os-mono">
-                          <span>Req {fmtUsd(r.reqMargin)} ({r.stakePct.toFixed(1)}% eq)</span>
-                          <span>Spread ~{fmtUsd(r.spreadCost)} · Swap {r.swapEstimate}</span>
-                        </div>
+                  <details className="os-tt-risk-details mt-3">
+                    <summary>Risk details and intended hold</summary>
+                    <div className="os-risk-summary mb-3">
+                      <div>
+                        <span>Total Est. Margin / Stake</span>
+                        <strong className="os-mono">
+                          $<CountUp value={Math.round(totalRequiredMargin)} />
+                        </strong>
                       </div>
-                    ))}
-                  </div>
+                      <div>
+                        <span>Legs Ready</span>
+                        <strong className="os-mono">
+                          {preflight.data?.filter(row=>row.checks.every(c=>c.decision==="PASS")).length ?? "—"} / {riskRows.length}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Asset Class Exposure</span>
+                        <strong>{activeSym.assetClass}</strong>
+                      </div>
+                    </div>
 
-                  <label className="d-block mb-3">
-                    <span className="os-tt-label">Intended hold</span>
-                    <select className="form-select" value={carry} onChange={e=>setCarry(e.target.value as NonNullable<RiskTicket["carry"]>)}>{carryOptions.map(c=><option key={c}>{c}</option>)}</select>
-                  </label>
-                  <span className="os-tt-label">T-14 Pre-Trade Guardrail Strip</span>
-                  {ticketsForRisk.length>0&&preflight.isPending&&<p role="status" className="small text-secondary">Evaluating fixed snapshot and active policy…</p>}
-                  {preflight.isError&&<p role="alert">Pre-trade preview could not load. <button type="button" onClick={()=>void preflight.refetch()}>Retry</button></p>}
-                  <ul className="os-guard-strip mb-3">
-                    {guardrailChecks.map((g) => (
-                      <li key={g.id} className={g.pass ? "is-pass" : "is-fail"}>
-                        <span className="os-guard-dot" aria-hidden>
-                          {g.pass ? <Check size={13} /> : <X size={13} />}
-                        </span>
-                        <div>
-                          <strong>{g.label}</strong>
-                          <small>{g.note}</small>
+                    <div className="os-risk-accounts mb-3">
+                      {riskRows.map((r) => (
+                        <div key={r.acc.id} className="os-risk-acc-row">
+                          <div className="d-flex justify-content-between align-items-center mb-1">
+                            <strong>{r.acc.label}</strong>
+                            <span className="os-mono small">
+                              Margin {r.acc.marginUsedPct}% →{" "}
+                              <b
+                                className={
+                                  r.resultingMarginPct > 80
+                                    ? "os-down"
+                                    : r.resultingMarginPct > 60
+                                      ? "os-warn"
+                                      : "os-up"
+                                }
+                              >
+                                {r.resultingMarginPct}%
+                              </b>
+                            </span>
+                          </div>
+                          <div className="d-flex justify-content-between small text-secondary os-mono">
+                            <span>Req {fmtUsd(r.reqMargin)} ({r.stakePct.toFixed(1)}% eq)</span>
+                            <span>Spread ~{fmtUsd(r.spreadCost)} · Swap {r.swapEstimate}</span>
+                          </div>
                         </div>
-                      </li>
-                    ))}
-                  </ul>
+                      ))}
+                    </div>
 
-                  <div className="mt-auto pt-3 border-top d-grid gap-2">
-                    <button
-                      type="button"
-                      className="os-btn os-btn-primary os-btn-lg"
-                      onClick={handleOpenConfirm}
-                    >
-                      <Zap size={17} aria-hidden /> Review &amp; Execute{" "}
-                      {legs.length} Leg{legs.length === 1 ? "" : "s"} (Ctrl+Enter)
-                    </button>
-                  </div>
+                    <label className="d-block mb-3">
+                      <span className="os-tt-label">Intended hold</span>
+                      <select className="form-select" value={carry} onChange={e=>setCarry(e.target.value as NonNullable<RiskTicket["carry"]>)}>{carryOptions.map(c=><option key={c}>{c}</option>)}</select>
+                    </label>
+                    <span className="os-tt-label">T-14 Pre-Trade Guardrail Strip</span>
+                    <ul className="os-guard-strip mb-3">
+                      {guardrailChecks.map((g) => (
+                        <li key={g.id} className={g.pass ? "is-pass" : "is-fail"}>
+                          <span className="os-guard-dot" aria-hidden>
+                            {g.pass ? <Check size={13} /> : <X size={13} />}
+                          </span>
+                          <div>
+                            <strong>{g.label}</strong>
+                            <small>{g.note}</small>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                  </details>
                 </div>
               </div>
             </div>
           </section>
 
+          </TicketTabPanel>
+
+          <TicketTabPanel tab="deriv" activeTab={activeTab}>
           {/* S5 · Deriv Contract Builder */}
           <section className="os-tt-section" aria-labelledby="os-s5-title">
             <div className="os-tt-card">
@@ -1835,104 +1768,9 @@ export function DashTradeTicketPage() {
             </div>
           </section>
 
-          {/* S6 · Execution Receipts Panel */}
-          <section className="os-tt-section" aria-labelledby="os-s6-title">
-            <div className="os-tt-card">
-              <SectionHead
-                id="os-s6-title"
-                eyebrow="S6 · EXECUTION RECEIPTS"
-                title="Per-Account Fan-Out Receipts"
-                sub="Every submission returns one receipt row per account. Paper legs simulate immediately; non-paper legs stop honestly at backend-required."
-                right={
-                  lastReceipts &&
-                  (lastReceipts.readyCount > 0 || lastReceipts.blockedCount > 0) && (
-                    <button
-                      type="button"
-                      className="os-btn os-btn-ghost os-btn-sm"
-                      onClick={() => {
-                        const failedIds = lastReceipts.receipts
-                          .filter((r) => r.status !== "filled")
-                          .map((r) => r.accountId);
-                        if (failedIds.length > 0) {
-                          setSelectedAccIds(failedIds);
-                          toast(`Isolated ${failedIds.length} non-filled leg(s) for retry`);
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }
-                      }}
-                    >
-                      <RotateCcw size={14} aria-hidden /> Retry Non-Filled Legs
-                    </button>
-                  )
-                }
-              />
+          </TicketTabPanel>
 
-              {!lastReceipts ? (
-                <div className="os-tt-empty">
-                  <Send size={22} aria-hidden />
-                  <strong>No ticket dispatched yet in this session</strong>
-                  <p className="small text-secondary mb-2">
-                    Press <strong>Review &amp; Execute</strong> above (or{" "}
-                    <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to submit across{" "}
-                    {legs.length} selected account(s).
-                  </p>
-                  <button
-                    type="button"
-                    className="os-btn os-btn-primary os-btn-sm"
-                    onClick={handleOpenConfirm}
-                  >
-                    Open Confirmation Modal
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="d-flex align-items-center gap-3 flex-wrap mb-3">
-                    <span className="os-mono fw-bold">
-                      Batch {lastReceipts.ticketRef} · {lastReceipts.timestampEat}
-                    </span>
-                    <span className="os-rec-pill is-filled">
-                      {lastReceipts.filledCount} Filled (SIM)
-                    </span>
-                    <span className="os-rec-pill is-ready">
-                      {lastReceipts.readyCount} Backend Preview
-                    </span>
-                    <span className="os-rec-pill is-blocked">
-                      {lastReceipts.blockedCount} Blocked
-                    </span>
-                  </div>
-                  <div className="os-receipt-list">
-                    {lastReceipts.receipts.map((r) => (
-                      <div
-                        key={r.accountId}
-                        className={`os-receipt-row is-${r.status}`}
-                      >
-                        <div className="d-flex align-items-center gap-2 flex-wrap">
-                          {r.status === "filled" ? (
-                            <CheckCircle2 size={17} className="os-up" aria-hidden />
-                          ) : r.status === "ready" ? (
-                            <Info size={17} className="os-warn" aria-hidden />
-                          ) : (
-                            <XCircle size={17} className="os-down" aria-hidden />
-                          )}
-                          <BrokerBadge broker={r.broker} label={r.brokerName} />
-                          <strong>{r.accountLabel}</strong>
-                          <span className="os-mono small text-secondary">
-                            {r.brokerSymbol} · {r.size}
-                          </span>
-                        </div>
-                        <div className="os-mono small fw-bold">
-                          {r.ticketId} · Fill {r.fillPrice}
-                        </div>
-                        <div className="small text-secondary w-100">
-                          {r.message}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
-
+          <TicketTabPanel tab="recent" activeTab={activeTab}>
           {/* S7 · Recent Tickets + Quick-Repeat (TanStack Table) */}
           <section className="os-tt-section" aria-labelledby="os-s7-title">
             <div className="os-tt-card">
@@ -1940,7 +1778,7 @@ export function DashTradeTicketPage() {
                 id="os-s7-title"
                 eyebrow="S7 · RECENT TICKETS & QUICK-REPEAT"
                 title="Last Tickets"
-                sub="Repeat an order back into S1–S3, Reverse the direction, or queue it into the T-6 Scheduler."
+                sub="Repeat or reverse a past ticket in the Order tab, or queue it in Scheduler."
                 right={
                   <Link to="/dashboard/records" className="os-tt-link">
                     Full Journal (T-8) <ArrowRight size={14} aria-hidden />
@@ -1963,6 +1801,9 @@ export function DashTradeTicketPage() {
             </div>
           </section>
 
+          </TicketTabPanel>
+
+          <TicketTabPanel tab="capabilities" activeTab={activeTab}>
           {/* S8 · Broker Ticket Capability Reference */}
           <section className="os-tt-section" aria-labelledby="os-s8-title">
             <div className="os-tt-card">
@@ -2004,37 +1845,10 @@ export function DashTradeTicketPage() {
               )}
             </div>
           </section>
+          </TicketTabPanel>
         </>
       )}
 
-      {confirmOpen && activeSym && (
-        <ConfirmTicketModal
-          sym={activeSym}
-          orderType={orderType}
-          side={side}
-          timeInForce={timeInForce}
-          comment={comment}
-          legs={legs}
-          accountsById={accountsById}
-          totalRequiredMargin={totalRequiredMargin}
-          needsFatFingerConfirm={needsFatFingerConfirm}
-          softWarning={softWarning}
-          submitting={fanoutMut.isPending}
-          onCancel={() => setConfirmOpen(false)}
-          onConfirm={(overrideReason) =>
-            fanoutMut.mutate({
-              canonical: activeSym.canonical,
-              orderType,
-              side,
-              timeInForce,
-              comment,
-              carry,
-              overrideReason,
-              legs,
-            })
-          }
-        />
-      )}
     </main>
   );
 }

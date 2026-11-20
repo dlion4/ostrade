@@ -11,6 +11,8 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import {
+  CircleCheck,
+  CalendarDays,
   AlertTriangle,
   ArrowDown,
   ArrowLeft,
@@ -90,6 +92,7 @@ import {
   type ResolutionResult,
   type Timeframe,
 } from "@/services/markets";
+import { PageHero } from "@/components/PageHero";
 import css from "@/styles/pages/dash-markets.css?inline";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -144,6 +147,24 @@ function OutcomeBanner({ outcome, onClose }: { outcome: DashboardMutationOutcome
   );
 }
 
+/* ── Page tabs: grouped sections ─────────────────────────── */
+
+const marketTabs = [
+  { id: "overview", label: "Overview", icon: LineChart },
+  { id: "explorer", label: "Explorer", icon: Search },
+  { id: "calendar", label: "Calendar", icon: CalendarClock },
+  { id: "tools", label: "Spreads & Mapping", icon: GitCompareArrows },
+] as const;
+type MarketTab = (typeof marketTabs)[number]["id"];
+
+function MkTabPanel({ tab, activeTab, children }: { tab: MarketTab; activeTab: MarketTab; children: ReactNode }) {
+  return (
+    <div className="os-mk-tabpanel" id={`mk-panel-${tab}`} role="tabpanel" aria-labelledby={`mk-tab-${tab}`} hidden={tab !== activeTab}>
+      {children}
+    </div>
+  );
+}
+
 /* ── Shared page model ───────────────────────────────────── */
 
 interface MarketsModel {
@@ -154,6 +175,7 @@ interface MarketsModel {
   watchlist: string[];
   setWatchlist: (next: string[], message?: string) => void;
   focus: (canonical: string, scroll?: boolean) => void;
+  openExplorer: () => void;
   openDrawer: (canonical: string) => void;
   trade: (canonical: string, side?: "BUY" | "SELL") => void;
   eventSymbols: Set<string>;
@@ -162,23 +184,26 @@ interface MarketsModel {
 
 function MarketsHeader() {
   return (
-    <header className="os-mk-section">
-    <div className="os-mk-intro">
-        <div>
-          <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
-            <span className="os-mk-eyebrow">T-2 · MULTI-BROKER EXPLORER</span>
-            <span className="os-mk-static">STATIC SNAPSHOT · 16:40 EAT · NO LIVE TICKING</span>
-          </div>
-          <h1 id="os-mk-title" className="os-mk-h1">Markets</h1>
-          <p className="os-mk-lead">Every tradable symbol from every connected account, one quote view, one chart, and broker-specific specs side by side.</p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
-          <Link to="/dashboard/trade" className="os-btn os-btn-primary os-btn-sm"><Send size={15} aria-hidden /> Trade Ticket (T-3)</Link>
-          <Link to="/dashboard/signals" className="os-btn os-btn-ghost os-btn-sm">Signal Desk (T-4)</Link>
-        </div>
-      </div>
-
-    </header>
+    <PageHero
+      icon={Compass}
+      kicker="T-2 · MULTI-BROKER EXPLORER"
+      titleId="os-mk-title"
+      title="Markets"
+      lead="Every tradable symbol from every connected account, one quote view, one chart, and broker-specific specs side by side."
+      meta={
+        <>
+          <span className="os-hero-pill"><Radar size={13} aria-hidden /> STATIC SNAPSHOT</span>
+          <span><CalendarDays size={13} aria-hidden /> 16:40 EAT (UTC+3)</span>
+          <span><CircleCheck size={13} aria-hidden /> No live ticking</span>
+        </>
+      }
+      actions={
+        <>
+          <Link to="/dashboard/trade" className="btn os-hero-btn os-hero-primary"><Send size={15} aria-hidden /> Trade Ticket (T-3)</Link>
+          <Link to="/dashboard/signals" className="btn os-hero-btn">Signal Desk (T-4)</Link>
+        </>
+      }
+    />
   );
 }
 
@@ -307,7 +332,7 @@ function WatchlistSection({ model }: { model: MarketsModel }) {
           eyebrow="S2 · WATCHLIST"
           title={`Watchlist (${items.length})`}
           sub="Drag cards (or use the arrows) to reorder. Click a card to focus the chart. Amber dot = high-impact event today or tomorrow."
-          right={<button type="button" className="os-btn os-btn-ghost os-btn-sm" onClick={() => { document.getElementById("mk-explorer-search")?.focus(); document.getElementById("mk-explorer")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}><Plus size={15} aria-hidden /> Add symbol</button>}
+          right={<button type="button" className="os-btn os-btn-ghost os-btn-sm" onClick={() => model.openExplorer()}><Plus size={15} aria-hidden /> Add symbol</button>}
         />
         {items.length === 0 ? (
           <div className="os-mk-empty">
@@ -1241,6 +1266,10 @@ export function DashMarketsPage() {
   const [focused, setFocused] = useState("XAUUSD");
   const [drawer, setDrawer] = useState<string | null>(null);
   const [watchlist, setWatchlistState] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<MarketTab>("overview");
+  const [chartFocus, setChartFocus] = useState(false);
+  const [explorerFocus, setExplorerFocus] = useState(false);
+  const tabRefs = useRef<Partial<Record<MarketTab, HTMLButtonElement | null>>>({});
 
   useEffect(() => {
     const prev = document.title;
@@ -1258,6 +1287,23 @@ export function DashMarketsPage() {
   }, [activeAccountId, fanoutAccountIds, connected]);
 
   useEffect(() => { if (watchQ.data) setWatchlistState(watchQ.data); }, [watchQ.data]);
+
+  // Quote focus lands on the chart inside the Overview panel; wait for the tab to settle before scrolling.
+  useEffect(() => {
+    if (activeTab !== "overview" || !chartFocus) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("mk-chart")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    setChartFocus(false);
+  }, [activeTab, chartFocus]);
+
+  // "Add symbol" hands over to the Explorer panel and its search box.
+  useEffect(() => {
+    if (activeTab !== "explorer" || !explorerFocus) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("mk-explorer")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    document.getElementById("mk-explorer-search")?.focus({ preventScroll: true });
+    setExplorerFocus(false);
+  }, [activeTab, explorerFocus]);
 
   const setSelectedIds = (ids: string[]) => {
     setSelectedIdsState(ids);
@@ -1282,9 +1328,14 @@ export function DashMarketsPage() {
   const focus = (canonical: string, scroll = false) => {
     setFocused(canonical);
     if (scroll) {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("mk-chart")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      setActiveTab("overview");
+      setChartFocus(true);
     }
+  };
+
+  const openExplorer = () => {
+    setActiveTab("explorer");
+    setExplorerFocus(true);
   };
 
   const tradeMut = useMutation({
@@ -1302,7 +1353,7 @@ export function DashMarketsPage() {
     tradeMut.mutate({ canonical, side, accountId: acc.id, price: s.ask, source: "T-2 Markets" });
   };
 
-  const model: MarketsModel = { universe, resolved, contextAccounts, resolvedBrokers, watchlist, setWatchlist, focus, openDrawer: setDrawer, trade, eventSymbols, focused };
+  const model: MarketsModel = { universe, resolved, contextAccounts, resolvedBrokers, watchlist, setWatchlist, focus, openExplorer, openDrawer: setDrawer, trade, eventSymbols, focused };
 
   if (accountsQ.isError || universeQ.isError) {
     return (
@@ -1325,13 +1376,55 @@ export function DashMarketsPage() {
       ) : (
         <>
           <ContextBar accounts={accounts} selectedIds={selectedIds} setSelectedIds={setSelectedIds} envFilter={envFilter} setEnvFilter={setEnvFilter} brokerFilter={brokerFilter} setBrokerFilter={setBrokerFilter} resolvedCount={resolved.length} contextAccounts={contextAccounts} allBrokers={allBrokers} />
-          <Reveal><WatchlistSection model={model} /></Reveal>
-          <ChartSection model={model} />
-          <Reveal><AssetTabsSection model={model} /></Reveal>
-          <ExplorerSection model={model} />
-          <CalendarSection model={model} />
-          <Reveal><SpreadMatrixSection model={model} /></Reveal>
-          <ResolverSection model={model} />
+
+          <div className="os-mk-tabs" role="tablist" aria-label="Markets sections">
+            {marketTabs.map(({ id, label, icon: Icon }, index) => (
+              <button
+                key={id}
+                ref={(node) => { tabRefs.current[id] = node; }}
+                id={`mk-tab-${id}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === id}
+                aria-controls={`mk-panel-${id}`}
+                tabIndex={activeTab === id ? 0 : -1}
+                onClick={() => setActiveTab(id)}
+                onKeyDown={(event) => {
+                  const last = marketTabs.length - 1;
+                  const nextIndex = event.key === "ArrowRight" ? (index === last ? 0 : index + 1)
+                    : event.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
+                    : event.key === "Home" ? 0 : event.key === "End" ? last : null;
+                  if (nextIndex === null) return;
+                  event.preventDefault();
+                  const next = marketTabs[nextIndex].id;
+                  setActiveTab(next);
+                  tabRefs.current[next]?.focus();
+                }}
+              >
+                <Icon size={16} aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <MkTabPanel tab="overview" activeTab={activeTab}>
+            <Reveal><WatchlistSection model={model} /></Reveal>
+            <ChartSection model={model} />
+            <Reveal><AssetTabsSection model={model} /></Reveal>
+          </MkTabPanel>
+
+          <MkTabPanel tab="explorer" activeTab={activeTab}>
+            <ExplorerSection model={model} />
+          </MkTabPanel>
+
+          <MkTabPanel tab="calendar" activeTab={activeTab}>
+            <CalendarSection model={model} />
+          </MkTabPanel>
+
+          <MkTabPanel tab="tools" activeTab={activeTab}>
+            <Reveal><SpreadMatrixSection model={model} /></Reveal>
+            <ResolverSection model={model} />
+          </MkTabPanel>
           <p className="os-mk-risk"><ShieldAlert size={14} aria-hidden /> Quotes, candles and spreads on this page are static snapshots for a frontend-only preview. Trading leveraged products carries a high risk of loss.</p>
         </>
       )}

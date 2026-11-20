@@ -124,35 +124,6 @@ export const getSignals = (): Promise<DeskSignal[]> =>
     300,
     460,
   );
-export const getSourcePerformance = () =>
-  latency(
-    feeds.map((feed) => {
-      const refs = receipts
-        .filter(
-          (r) =>
-            r.status === "Filled" &&
-            inbox.some((s) => s.id === r.signalId && s.feed === feed.name),
-        )
-        .map((r) => r.ref);
-      const closed = refs
-        .map((ref) => getSignalAttribution([ref]))
-        .filter((x) => x.closed);
-      const priorCloses =
-        seedFeeds.find((f) => f.id === feed.id)?.executed ?? 0;
-      return {
-        ...feed,
-        pnl: feed.pnl + closed.reduce((sum, v) => sum + v.realized, 0),
-        winRate: closed.length
-          ? (((priorCloses * feed.winRate) / 100 +
-              closed.filter((v) => v.realized > 0).length) /
-              (priorCloses + closed.length)) *
-            100
-          : feed.winRate,
-      };
-    }),
-    300,
-    450,
-  );
 export const getGuardLog = () =>
   latency({ events: guardEvents, policy }, 300, 450);
 export const getDeskReceipts = () => latency(receipts, 300, 450);
@@ -193,11 +164,6 @@ function inspect(row: DeskSignal): Pick<GuardEvent, "type" | "reason"> | null {
       type: "Malformed",
       reason:
         "A mapped instrument, direction, and positive entry price are required.",
-    };
-  if (feeds.some((f) => f.name === row.feed && f.muted))
-    return {
-      type: "Muted",
-      reason: `${row.feed} is muted in source performance.`,
     };
   const others = inbox.filter(
     (r) => r.id !== row.id && r.feed === row.feed && r.status !== "Discarded",
@@ -302,6 +268,68 @@ function ingest(input: Incoming, status: "Parsed" | "Staged") {
 }
 export const saveSignal = (input: Incoming, status: "Parsed" | "Staged") =>
   latency(ingest(input, status), 330, 480);
+
+/** Operator-authored plan signal for Automation (T-5): bypasses channel guard inspection. */
+export function savePlanSignal(order: SignalOrder, feed = "Manual plan") {
+  const row: DeskSignal = {
+    id: `SIG-${String(nextId++).padStart(4, "0")}`,
+    raw: `${order.side} ${order.symbol} @ ${order.entry} · SL ${order.sl} · TP ${order.targets[0] ?? "—"} · size ${order.size}`,
+    order: structuredClone(order),
+    feed,
+    time: now(),
+    status: "Parsed",
+    accounts: [],
+    refs: [],
+    pnl: null,
+    notes: [`Saved as a manual plan in Automation (T-5).`],
+  };
+  inbox = [row, ...inbox];
+  return latency(row, 330, 480);
+}
+
+/** Current desk clock (epoch ms) — scheduling inputs are validated against it. */
+export const deskNow = () => now();
+
+/** Edit the trade figures of a saved signal: instrument, direction, entry, lots, SL, TP. */
+export async function updateDeskSignal(
+  id: string,
+  patch: {
+    symbol?: string;
+    side?: "BUY" | "SELL";
+    entry?: number;
+    sl?: number;
+    tp?: number;
+    size?: number;
+  },
+) {
+  const row = inbox.find((r) => r.id === id);
+  if (!row) throw new Error("Saved signal not found.");
+  if (row.status === "Discarded")
+    throw new Error("This signal was discarded — restore it from Signal Desk first.");
+  const next = structuredClone(row.order);
+  if (patch.symbol !== undefined) {
+    if (!marketSymbols.some((s) => s.canonical === patch.symbol))
+      throw new Error("Choose an instrument from the market universe.");
+    next.symbol = patch.symbol;
+  }
+  if (patch.side) next.side = patch.side;
+  const positive = (v: number, label: string) => {
+    if (!Number.isFinite(v) || v <= 0) throw new Error(`${label} must be a positive number.`);
+    return v;
+  };
+  if (patch.entry !== undefined) next.entry = positive(patch.entry, "Entry price");
+  if (patch.sl !== undefined) next.sl = positive(patch.sl, "Stop loss");
+  if (patch.tp !== undefined) next.targets = [positive(patch.tp, "Take profit")];
+  if (patch.size !== undefined) {
+    if (!Number.isFinite(patch.size) || patch.size < 0.01 || patch.size > 100)
+      throw new Error("Lots must be between 0.01 and 100.");
+    next.size = Math.round(patch.size * 100) / 100;
+  }
+  row.order = next;
+  row.raw = `${next.side} ${next.symbol} @ ${next.entry} · SL ${next.sl} · TP ${next.targets[0] ?? "—"} · size ${next.size}`;
+  row.notes.push(`Edited in Automation (T-5) · ${eatTime(now())}.`);
+  return latency(row, 320, 470);
+}
 
 export async function importSignals(
   rows: { raw: string; ticket: string }[],
@@ -715,12 +743,6 @@ export async function scheduleDeskSignal(
     row.refs.push(result.ref);
   }
   return result;
-}
-export async function muteFeed(id: string) {
-  const feed = feeds.find((f) => f.id === id);
-  if (!feed) throw new Error("Source not found.");
-  feed.muted = !feed.muted;
-  return latency(feed, 300, 410);
 }
 export async function updateGuards(next: GuardPolicy) {
   if (

@@ -59,7 +59,7 @@ export interface GuardEvent {
   id: string;
   signalId: string;
   symbol: string;
-  type: "Duplicate" | "Storm" | "Stale" | "Malformed" | "Muted";
+  type: "Duplicate" | "Storm" | "Stale" | "Malformed";
   reason: string;
   time: number;
   overrideReason?: string;

@@ -1,0 +1,158 @@
+/* ── Shared workspace page hero (T-2 … T-9 intro banner) ─────────── */
+
+.os-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  overflow: hidden;
+  min-height: 191px;
+  padding: 23px 25px 22px;
+  margin-bottom: 18px;
+  background: linear-gradient(110deg, var(--sd-white) 16%, color-mix(in srgb, var(--sd-peach) 38%, var(--sd-white)) 65%, var(--sd-peach));
+  border: 1px solid color-mix(in srgb, var(--sd-line) 76%, var(--sd-accent));
+  border-radius: 13px;
+}
+.os-hero-art {
+  position: absolute;
+  z-index: -1;
+  right: 0;
+  inset-block: 0;
+  width: 49%;
+  height: 100%;
+  color: var(--sd-accent);
+  opacity: 0.59;
+  mask-image: linear-gradient(90deg, transparent, #000 38%);
+}
+.os-hero-content { min-width: 0; }
+.os-hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sd-accent-ink);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+}
+.os-hero-kicker > span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+  background: var(--sd-peach);
+}
+.os-hero h1 {
+  margin: 8px 0 6px;
+  font: 700 clamp(32px, 3.1vw, 48px)/1.03 var(--os-font-head);
+  letter-spacing: -0.06em;
+  color: var(--sd-ink);
+}
+.os-hero .os-hero-accent { color: var(--sd-accent-ink); }
+.os-hero-content > p {
+  max-width: 560px;
+  color: var(--os-text-2);
+  font-size: 13px;
+}
+.os-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 15px;
+  color: var(--os-text-3);
+  font-size: 11px;
+}
+.os-hero-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.os-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 5px;
+  padding: 3px 6px;
+  background: var(--sd-peach);
+  color: var(--sd-accent-ink);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.os-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+.os-hero-btn {
+  --bs-btn-color: var(--sd-ink);
+  --bs-btn-bg: var(--sd-white);
+  --bs-btn-border-color: var(--sd-line);
+  --bs-btn-hover-color: var(--sd-accent-ink);
+  --bs-btn-hover-bg: var(--sd-peach);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--sd-line), var(--sd-accent) 35%);
+  --bs-btn-active-bg: var(--sd-peach);
+  --bs-btn-active-color: var(--sd-accent-ink);
+  --bs-btn-active-border-color: var(--sd-accent);
+  --bs-btn-disabled-color: var(--os-text-3);
+  --bs-btn-disabled-bg: var(--sd-white);
+  --bs-btn-disabled-border-color: var(--sd-line);
+  --bs-btn-padding-x: 11px;
+  --bs-btn-padding-y: 7px;
+  --bs-btn-font-size: 12px;
+  --bs-btn-font-weight: 650;
+  --bs-btn-border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  min-height: 34px;
+  text-decoration: none;
+}
+a.os-hero-btn { text-decoration: none; }
+.os-hero-primary {
+  --bs-btn-bg: #b94b20;
+  --bs-btn-color: #fff;
+  --bs-btn-border-color: #b94b20;
+  --bs-btn-hover-bg: #a54019;
+  --bs-btn-hover-border-color: #a54019;
+  --bs-btn-hover-color: white;
+  --bs-btn-active-bg: #943919;
+  --bs-btn-active-color: white;
+  --bs-btn-active-border-color: #943919;
+}
+.os-hero-danger {
+  --bs-btn-bg: var(--os-down);
+  --bs-btn-color: #fff;
+  --bs-btn-border-color: var(--os-down);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--os-down) 85%, #000);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--os-down) 85%, #000);
+  --bs-btn-hover-color: white;
+  --bs-btn-active-bg: color-mix(in srgb, var(--os-down) 75%, #000);
+  --bs-btn-active-color: white;
+  --bs-btn-active-border-color: color-mix(in srgb, var(--os-down) 75%, #000);
+}
+@media (max-width: 991px) {
+  .os-hero {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .os-hero-actions {
+    justify-content: flex-start;
+    flex-shrink: 1;
+    width: 100%;
+  }
+  .os-hero-art { width: 100%; opacity: 0.32; }
+}
+@media (max-width: 575px) {
+  .os-hero { padding: 18px 16px; }
+  .os-hero h1 { font-size: clamp(28px, 8vw, 34px); }
+}
