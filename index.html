@@ -13,7 +13,7 @@
     <script>
       try {
         var t = localStorage.getItem("os-theme");
-        document.documentElement.setAttribute("data-bs-theme", t === "dark" ? "dark" : "light");
+        document.documentElement.setAttribute("data-bs-theme", t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light");
       } catch (e) {}
     </script>
   </head>

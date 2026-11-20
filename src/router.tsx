@@ -1,3 +1,5 @@
+import { Route as settingsFileRoute } from "@/routes/dashboard/settings";
+import { Route as notificationsFileRoute } from "@/routes/dashboard/notifications";
 import { Route as riskFileRoute } from "@/routes/dashboard/risk";
 import { Route as copilotFileRoute } from "@/routes/dashboard/copilot";
 import { Route as transfersFileRoute } from "@/routes/dashboard/transfers";
@@ -15,7 +17,6 @@ import {
 } from "@tanstack/react-router";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
-import { DashboardStubPage } from "@/components/DashboardShell";
 import { Route as rootRoute } from "@/routes/__root";
 import { Route as dashboardFileRoute } from "@/routes/dashboard";
 import { LandingPage } from "@/pages/Landing";
@@ -178,20 +179,6 @@ const dashIndexRoute = createRoute({
   component: DashCommandCenterPage,
 });
 
-const dashStub = <P extends string>(
-  path: P,
-  code: string,
-  title: string,
-  blurb: string
-) =>
-  createRoute({
-    getParentRoute: () => dashboardShellRoute,
-    path,
-    component: () => (
-      <DashboardStubPage code={code} title={title} blurb={blurb} />
-    ),
-  });
-
 const dashMarketsRoute = createRoute({
   getParentRoute: () => dashboardShellRoute,
   path: "markets",
@@ -227,18 +214,10 @@ const copilotMount = { id: "/copilot", path: "/copilot", getParentRoute: () => d
 const dashCopilotRoute = copilotFileRoute.update(copilotMount);
 const riskMount = { id: "/risk", path: "/risk", getParentRoute: () => dashboardShellRoute, component: riskFileRoute.options.component };
 const dashRiskRoute = riskFileRoute.update(riskMount);
-const dashNotificationsRoute = dashStub(
-  "notifications",
-  "T-15",
-  "Notifications & Alerts",
-  "Adapter health notices, guardrail triggers, and delivery channel rules."
-);
-const dashSettingsRoute = dashStub(
-  "settings",
-  "T-16",
-  "Workspace Settings",
-  "Master-admin operator preferences, display currency, and security settings."
-);
+const notificationsMount = { id: "/notifications", path: "/notifications", getParentRoute: () => dashboardShellRoute, component: notificationsFileRoute.options.component };
+const dashNotificationsRoute = notificationsFileRoute.update(notificationsMount);
+const settingsMount = { id: "/settings", path: "/settings", getParentRoute: () => dashboardShellRoute, component: settingsFileRoute.options.component };
+const dashSettingsRoute = settingsFileRoute.update(settingsMount);
 
 const routeTree = rootRoute.addChildren([
   layout.addChildren([
@@ -279,10 +258,10 @@ const routeTree = rootRoute.addChildren([
 export function getRouter() {
   const startTarget = import.meta.env.VITE_OS_START === "true";
   const appHistory = typeof window === "undefined" ? createMemoryHistory() : startTarget ? createBrowserHistory() : createHashHistory();
-  // The standalone preview opens the current co-pilot workspace. Explicit hash links retain all pages.
+  // The standalone preview opens the current Settings workspace. Explicit hash links retain all pages.
   if (!startTarget && typeof window !== "undefined" && !window.location.hash) {
     const path = window.location.pathname;
-    appHistory.replace(path === "/" || path.endsWith("/index.html") ? "/dashboard/risk" : path);
+    appHistory.replace(path === "/" || path.endsWith("/index.html") ? "/dashboard/settings" : path);
   }
   return createRouter({ routeTree, history: appHistory, scrollRestoration: true, defaultPreload: "intent" });
 }

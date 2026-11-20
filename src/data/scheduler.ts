@@ -1,3 +1,4 @@
+import type { BrokerKey } from "./dashboard";
 // T-6 Trade Scheduler — typed local mock data
 // Frontend-only: no broker execution, no tick simulation
 
@@ -14,7 +15,7 @@ export interface SchedulerSchedule {
   triggerBadge: string; // short badge
   accountLabel: string;
   accountId: string;
-  broker: "paper" | "deriv" | "exness" | "alpaca";
+  broker: BrokerKey;
   brokerLabel: string;
   symbol: string;
   side: "BUY" | "SELL";

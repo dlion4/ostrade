@@ -1,3 +1,4 @@
+import { demoWebhookUrl } from "./settings";
 import { quickSignalDrafts } from "./dashboard";
 import { signalSamples } from "./landing";
 
@@ -93,7 +94,7 @@ export const channels: DeskSource[] = [
     name: "Webhook",
     status: "Preview",
     field: "Webhook URL",
-    value: "https://ostrade.invalid/hooks/tradingview/desk",
+    value: demoWebhookUrl("TradingView"),
     hint: "This example URL is deliberately inactive. Paste a TradingView JSON payload to test locally.",
   },
   {
