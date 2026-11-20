@@ -3,9 +3,10 @@ import {
   useCallback,
   useContext,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
-import type { KillSwitchMode } from "@/services/dashboard";
+import { getLocalKillSwitch, subscribeKillSwitch, type KillSwitchMode } from "@/services/dashboard";
 
 export type GlobalWorkspaceMode = "paper" | "live";
 
@@ -17,7 +18,6 @@ interface DashboardContextValue {
   globalMode: GlobalWorkspaceMode;
   setGlobalMode: (mode: GlobalWorkspaceMode) => void;
   killSwitch: KillSwitchMode;
-  setKillSwitch: (mode: KillSwitchMode) => void;
 }
 
 const DashboardCtx = createContext<DashboardContextValue | null>(null);
@@ -47,7 +47,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem("os-fanout-accounts", JSON.stringify(ids)); } catch { /* storage optional */ }
   }, []);
 
-  const [killSwitch, setKillSwitch] = useState<KillSwitchMode>("armed");
+  const killSwitch = useSyncExternalStore(subscribeKillSwitch,getLocalKillSwitch,()=>"armed" as const);
 
   const setActiveAccountId = useCallback((id: string) => {
     setActiveAccountState(id);
@@ -77,7 +77,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         globalMode,
         setGlobalMode,
         killSwitch,
-        setKillSwitch,
       }}
     >
       {children}

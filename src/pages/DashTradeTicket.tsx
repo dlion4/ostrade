@@ -68,12 +68,12 @@ import {
   type StopMode,
   type TimeInForce,
 } from "@/services/tradeTicket";
+import { carryOptions, previewRiskTickets, type RiskTicket } from "@/services/risk";
 import css from "@/styles/pages/dash-trade-ticket.css?inline";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
 const FAT_FINGER_USD = 500;
-const MAX_STAKE_GUARD_USD = 200;
 
 function Skel({ h = 18, w = "100%" }: { h?: number; w?: number | string }) {
   return <span className="os-skel" style={{ height: h, width: w }} aria-hidden />;
@@ -210,6 +210,7 @@ function ConfirmTicketModal({
   accountsById,
   totalRequiredMargin,
   needsFatFingerConfirm,
+  softWarning,
   submitting,
   onConfirm,
   onCancel,
@@ -224,10 +225,12 @@ function ConfirmTicketModal({
   totalRequiredMargin: number;
   needsFatFingerConfirm: boolean;
   submitting: boolean;
-  onConfirm: () => void;
+  softWarning: boolean;
+  onConfirm: (reason?: string) => void;
   onCancel: () => void;
 }) {
   const [typed, setTyped] = useState("");
+  const [overrideReason, setOverrideReason] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -240,7 +243,7 @@ function ConfirmTicketModal({
   }, [needsFatFingerConfirm, submitting, onCancel]);
 
   const canProceed =
-    !submitting &&
+    !submitting && (!overrideReason.trim() || overrideReason.trim().length >= 12) &&
     (!needsFatFingerConfirm || typed.trim().toUpperCase() === "EXECUTE");
 
   return (
@@ -328,6 +331,10 @@ function ConfirmTicketModal({
           </div>
         )}
 
+        {softWarning && <label className="d-block small mb-3">Optional soft shield override reason
+          <input className="form-control mt-1" value={overrideReason} maxLength={240} onChange={e=>setOverrideReason(e.target.value)} placeholder="At least 12 characters; no credentials" />
+          <span className="text-secondary">This cannot bypass any hard block. Reasons are recorded in the risk audit.</span>
+        </label>}
         <div className="os-tt-note is-info mb-3">
           <Info size={15} aria-hidden />
           <span>
@@ -350,7 +357,7 @@ function ConfirmTicketModal({
             type="button"
             className="os-btn os-btn-primary os-btn-sm"
             disabled={!canProceed}
-            onClick={onConfirm}
+            onClick={() => onConfirm(overrideReason.trim() || undefined)}
           >
             {submitting ? (
               <>
@@ -591,6 +598,7 @@ export function DashTradeTicketPage() {
   const [slInput, setSlInput] = useState<string>("75");
   const [tpInput, setTpInput] = useState<string>("160");
   const [timeInForce, setTimeInForce] = useState<TimeInForce>("GTC");
+  const [carry, setCarry] = useState<NonNullable<RiskTicket["carry"]>>("Intraday");
   const [comment, setComment] = useState<string>("OStrade fan-out");
 
   // S5 Deriv Contract Builder state
@@ -786,82 +794,13 @@ export function DashTradeTicketPage() {
   const totalRequiredMargin = riskRows.reduce((s, r) => s + r.reqMargin, 0);
   const needsFatFingerConfirm = totalRequiredMargin > FAT_FINGER_USD;
 
-  // Guardrail strip checks (T-14 rules)
-  const guardrailChecks = useMemo(() => {
-    const unmapped = riskRows.filter((r) => !r.mapped);
-    const badSize = riskRows.filter(
-      (r) =>
-        activeSym &&
-        (r.leg.size < activeSym.minVolume || r.leg.size > activeSym.maxVolume)
-    );
-    const overStake = riskRows.filter((r) => r.reqMargin > MAX_STAKE_GUARD_USD);
-    const highMargin = riskRows.filter((r) => r.resultingMarginPct > 85);
-
-    return [
-      {
-        id: "g-kill",
-        label: "Kill-Switch Standby",
-        pass: killSwitch === "armed",
-        note:
-          killSwitch === "armed"
-            ? "Armed standby (manual trading allowed)"
-            : `Workspace is ${killSwitch.toUpperCase()} — manual review active`,
-      },
-      {
-        id: "g-sess",
-        label: "Session Tradable",
-        pass: !!activeSym?.tradeableNow,
-        note: activeSym?.tradeableNow
-          ? `${activeSym.canonical} market window open`
-          : `${activeSym?.canonical ?? "Symbol"} session closed (pending orders allowed)`,
-      },
-      {
-        id: "g-map",
-        label: "Symbol Normalization",
-        pass: unmapped.length === 0,
-        note:
-          unmapped.length === 0
-            ? `Mapped cleanly across ${riskRows.length} account(s)`
-            : `Not listed on: ${unmapped.map((u) => u.acc.label).join(", ")}`,
-      },
-      {
-        id: "g-size",
-        label: "Min / Max Lot Bounds",
-        pass: badSize.length === 0,
-        note:
-          badSize.length === 0 && activeSym
-            ? `Within ${activeSym.minVolume}–${activeSym.maxVolume} ${activeSym.volumeUnit}`
-            : `Size out of bounds on ${badSize.length} leg(s)`,
-      },
-      {
-        id: "g-stake",
-        label: `Max Stake / Trade ($${MAX_STAKE_GUARD_USD})`,
-        pass: overStake.length === 0,
-        note:
-          overStake.length === 0
-            ? `Peak leg ${fmtUsd(Math.max(0, ...riskRows.map((r) => r.reqMargin)))}`
-            : `${overStake[0].acc.label} requested ${fmtUsd(overStake[0].reqMargin)} (>${MAX_STAKE_GUARD_USD})`,
-      },
-      {
-        id: "g-margin",
-        label: "Margin Floor (<85%)",
-        pass: highMargin.length === 0,
-        note:
-          highMargin.length === 0
-            ? "Post-trade margin healthy on all selected legs"
-            : `Margin stress on ${highMargin[0].acc.label} (${highMargin[0].resultingMarginPct}%)`,
-      },
-      {
-        id: "g-sl",
-        label: "Protective Stop Check",
-        pass: stopMode !== "none" && computedSl > 0,
-        note:
-          stopMode !== "none" && computedSl > 0
-            ? `SL ${fmtPrice(computedSl, activeSym?.digits ?? 2)} attached`
-            : "No SL attached — verify intentional before confirming",
-      },
-    ];
-  }, [riskRows, killSwitch, activeSym, stopMode, computedSl]);
+  // Read-only checklist; actual admission always refreshes the policy and records the decision.
+  const ticketsForRisk: RiskTicket[] = activeSym ? legs.map(leg=>({...leg,symbol:activeSym.canonical,side,channel:"Manual",carry})) : [];
+  const preflight = useQuery({queryKey:["risk","ticket-preview",killSwitch,ticketsForRisk],queryFn:()=>previewRiskTickets(ticketsForRisk),enabled:ticketsForRisk.length>0});
+  const guardrailChecks = (preflight.data??[]).flatMap(row=>row.checks.map(c=>({
+    id:`${row.accountId}:${c.id}`, label:c.label, pass:c.decision==="PASS", note:`${row.scope} · ${c.detail}${c.decision==="BLOCK"&&c.overridable?" Manual review permitted.":""}`,
+  })));
+  const softWarning = preflight.data?.some(row=>row.checks.some(c=>c.decision==="BLOCK"&&c.overridable)&&!row.checks.some(c=>c.decision==="BLOCK"&&!c.overridable))??false;
 
   // Mutations
   const fanoutMut = useMutation({
@@ -873,6 +812,7 @@ export function DashTradeTicketPage() {
       qc.invalidateQueries({ queryKey: ["accounts"] });
       qc.invalidateQueries({ queryKey: ["records"] });
       qc.invalidateQueries({ queryKey: ["recent-tickets"] });
+      qc.invalidateQueries({ queryKey: ["risk"] });
       toast(
         `${res.filledCount} filled · ${res.readyCount} backend preview · ${res.blockedCount} blocked`
       );
@@ -1605,7 +1545,7 @@ export function DashTradeTicketPage() {
                     <div>
                       <span>Legs Ready</span>
                       <strong className="os-mono">
-                        {riskRows.filter((r) => r.mapped).length} / {riskRows.length}
+                        {preflight.data?.filter(row=>row.checks.every(c=>c.decision==="PASS")).length ?? "—"} / {riskRows.length}
                       </strong>
                     </div>
                     <div>
@@ -1642,9 +1582,13 @@ export function DashTradeTicketPage() {
                     ))}
                   </div>
 
-                  <span className="os-tt-label">
-                    T-14 Pre-Trade Guardrail Strip
-                  </span>
+                  <label className="d-block mb-3">
+                    <span className="os-tt-label">Intended hold</span>
+                    <select className="form-select" value={carry} onChange={e=>setCarry(e.target.value as NonNullable<RiskTicket["carry"]>)}>{carryOptions.map(c=><option key={c}>{c}</option>)}</select>
+                  </label>
+                  <span className="os-tt-label">T-14 Pre-Trade Guardrail Strip</span>
+                  {ticketsForRisk.length>0&&preflight.isPending&&<p role="status" className="small text-secondary">Evaluating fixed snapshot and active policy…</p>}
+                  {preflight.isError&&<p role="alert">Pre-trade preview could not load. <button type="button" onClick={()=>void preflight.refetch()}>Retry</button></p>}
                   <ul className="os-guard-strip mb-3">
                     {guardrailChecks.map((g) => (
                       <li key={g.id} className={g.pass ? "is-pass" : "is-fail"}>
@@ -2064,15 +2008,18 @@ export function DashTradeTicketPage() {
           accountsById={accountsById}
           totalRequiredMargin={totalRequiredMargin}
           needsFatFingerConfirm={needsFatFingerConfirm}
+          softWarning={softWarning}
           submitting={fanoutMut.isPending}
           onCancel={() => setConfirmOpen(false)}
-          onConfirm={() =>
+          onConfirm={(overrideReason) =>
             fanoutMut.mutate({
               canonical: activeSym.canonical,
               orderType,
               side,
               timeInForce,
               comment,
+              carry,
+              overrideReason,
               legs,
             })
           }

@@ -1,3 +1,5 @@
+import { marketSymbols } from "@/data/markets";
+import { isAutomationPaused, placeDashboardOrder } from "./dashboard";
 import {
   calendarDays,
   schedulerKpis,
@@ -25,12 +27,12 @@ function genRef() {
 }
 
 export async function getSchedulerKpis(): Promise<SchedulerKpi> {
-  const active = schedulesStore.filter(s => s.status === "armed").length;
+  const active = schedulesStore.filter(s => s.status === "armed" && !isAutomationPaused(s.accountId)).length;
   return latency({ ...schedulerKpis, active, total: 50 }, 320, 520);
 }
 
 export async function getSchedulerSchedules(filters?: { status?: string; trigger?: string; account?: string; search?: string }): Promise<SchedulerSchedule[]> {
-  let list = [...schedulesStore];
+  let list = schedulesStore.map(s=>s.status==="armed"&&isAutomationPaused(s.accountId)?{...s,status:"paused" as const,nextFire:"Held by risk control"}:s);
   if (filters?.status && filters.status !== "all") list = list.filter(s => s.status === filters.status);
   if (filters?.trigger && filters.trigger !== "all") list = list.filter(s => s.trigger === filters.trigger);
   if (filters?.account && filters.account !== "all") list = list.filter(s => s.accountId === filters.account);
@@ -207,6 +209,7 @@ export async function createBulkSchedules(rows: BulkParsedRow[]): Promise<{ ok: 
 export async function updateScheduleStatus(id: string, status: SchedulerSchedule["status"]): Promise<{ ok: boolean; message: string }> {
   const idx = schedulesStore.findIndex(s => s.id === id);
   if (idx === -1) return latency({ ok: false, message: "Schedule not found." }, 250, 400);
+  if (status === "armed" && isAutomationPaused(schedulesStore[idx].accountId)) return latency({ok:false,message:"Automation is paused for this account or workspace."});
   if (status === "armed" && schedulesStore[idx].copilot) return latency({ok:false,message:"AI drafts remain paused until live automation is available. No job was created."});
   schedulesStore[idx] = { ...schedulesStore[idx], status, nextFire: status === "paused" ? "Paused" : status === "armed" ? "Resumed" : schedulesStore[idx].nextFire };
   return latency({ ok: true, message: `Schedule ${schedulesStore[idx].ref} is now ${status}.` }, 300, 500);
@@ -216,10 +219,21 @@ export async function runScheduleNow(id: string): Promise<{ ok: boolean; message
   const s = schedulesStore.find(x => x.id === id);
   if (!s) return latency({ ok: false, message: "Schedule not found." }, 300, 450);
   if (s.copilot) return latency({ok:false,message:"This AI schedule is a paused draft. No order was sent."});
-  if (s.accountLabel.includes("Paper")) {
-    return latency({ ok: true, message: `Simulated run of ${s.ref}: filled on Paper (SIMULATED). Receipt OST-2025-${String(Math.floor(Math.random()*9000)+1000)} logged.` }, 600, 900);
-  }
-  return latency({ ok: true, message: `Preview run of ${s.ref} on ${s.accountLabel}: Ready — executes when the backend is connected.` }, 500, 750);
+  if (s.status!=="armed") return latency({ok:false,message:"Only armed non-AI schedules can be run."});
+  const m=marketSymbols.find(row=>row.canonical===s.symbol);
+  const size=Number(s.size.match(/[\d.]+/)?.[0]);
+  const entry=m?(s.side==="BUY"?m.ask:m.bid):0;
+  const level=(text:string,stop:boolean)=>{
+    const value=Number(text.match(/[\d.]+/)?.[0]);
+    if(!Number.isFinite(value)||!m)return 0;
+    if(!/pip|pts|point/i.test(text))return value;
+    const distance=value*(/pip/i.test(text)||m.assetClass==="Synthetics"?m.pip:1);
+    return Number((entry+(s.side==="BUY"?1:-1)*(stop?-1:1)*distance).toFixed(m.digits));
+  };
+  const outcome=await placeDashboardOrder({accountId:s.accountId,symbol:s.symbol,size,side:s.side,entry,sl:level(s.sl,true),tp:level(s.tp,false),origin:"Scheduled",sourceRef:s.ref,sourceLabel:s.name});
+  const index=schedulesStore.findIndex(row=>row.id===id);
+  if(index!==-1)schedulesStore[index]={...schedulesStore[index],lastResult:`${outcome.title} · ${outcome.ref}`,lastResultTone:outcome.mode==="simulated"?"success":outcome.mode==="blocked"?"error":"neutral"};
+  return {ok:outcome.mode!=="blocked",message:outcome.detail};
 }
 
 export async function deleteSchedule(id: string): Promise<{ ok: boolean; message: string }> {

@@ -207,6 +207,14 @@ async function executeDraft(draft:CopilotDraft,a:TradingAccount):Promise<{status
     for(const o of objects.filter(o=>o.kind==="guard")){const ref=uid("AI-GUARD");guardDrafts.unshift({ref,object:o,accountId:a.id});refs.push({ref,kind:"guard",label:o.name});}
     return {status:"Drafts saved",message:`${refs.length} local draft${refs.length===1?"":"s"} saved. Schedules stay paused, rules disabled, and guards advisory. No jobs or broker calls started.`,refs};
   }
+  if(p.type==="order"){
+    const item=marketSymbols.find(s=>s.canonical===p.symbol);
+    if(!item||!mappedBrokerSymbol(item,a)||!validOrder(p.side,p.size,p.entry,p.sl,p.tp))throw new Error("The reviewed order no longer passes the account or sizing guard.");
+    const res=await placeDashboardOrder({accountId:a.id,symbol:p.symbol,side:p.side,size:p.size,entry:p.entry,sl:p.sl,tp:p.tp,sizeUnit:p.unit,sourceRef:draft.id,sourceLabel:"AI Co-Pilot · reviewed",origin:"Co-Pilot"});
+    if(res.mode==="ready")return offline(`${readyMessage}. No broker request was sent.`);
+    if(res.mode!=="simulated")throw new Error(res.detail||"Paper fill blocked.");
+    return {status:"Simulated",message:res.detail,refs:[{ref:res.ref,kind:"order",label:`${p.side} ${p.symbol}`}]};
+  }
   if(a.broker!=="paper"||a.environment!=="paper")return offline(`${readyMessage}. No broker request was sent.`);
   if(p.type==="pause"){
     const rule=(await getSignalRules()).find(r=>r.id===p.ruleId&&r.accountId===a.id);
@@ -215,13 +223,6 @@ async function executeDraft(draft:CopilotDraft,a:TradingAccount):Promise<{status
     return {status:"Simulated",message:`Paused ${rule.name} locally. No other rule or position changed.`,refs:[{ref:rule.id,kind:"rule",label:rule.name}]};
   }
   if(getLocalKillSwitch()!=="armed")throw new Error("The workspace kill switch is active. Create a fresh review after re-arming.");
-  if(p.type==="order"){
-    const item=marketSymbols.find(s=>s.canonical===p.symbol);
-    if(!item||!mappedBrokerSymbol(item,a)||!validOrder(p.side,p.size,p.entry,p.sl,p.tp)||a.marginUsedPct>=60)throw new Error("The reviewed order no longer passes the account or sizing guard.");
-    const res=await placeDashboardOrder({accountId:a.id,symbol:p.symbol,side:p.side,size:p.size,entry:p.entry,sl:p.sl,tp:p.tp,sizeUnit:p.unit,sourceRef:draft.id,sourceLabel:"AI Co-Pilot · reviewed",origin:"Co-Pilot"});
-    if(res.mode!=="simulated")throw new Error(res.detail||"Paper fill blocked.");
-    return {status:"Simulated",message:res.detail,refs:[{ref:res.ref,kind:"order",label:`${p.side} ${p.symbol}`}]};
-  }
   const positions=await getPositions({accountId:a.id});
   if(getLocalKillSwitch()!=="armed")throw new Error("The workspace kill switch is active. No positions changed.");
   if(p.type==="modify"){

@@ -479,6 +479,7 @@ export interface OpenPosition {
   entry: number;
   current: number;
   sl: number;
+  initialSl?: number; // Captured for historical stop-risk estimates on local fills.
   tp: number;
   pnl: number;
   pnlPct: number;

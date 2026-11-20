@@ -2,6 +2,7 @@ import { eatDay, initialJournalNotes, initialStatementExceptions, initialTradeRe
 import { tradingAccounts, type OpenPosition } from "@/data/dashboard";
 import { postFinanceLedger, tradeLedgerEntries } from "./financeLedger";
 import { latency } from "./_latency";
+import { originalPositionRisk } from "./riskEngine";
 import { exportRecords, readStatement, type ExportFormat, type StatementFormat } from "./recordsFiles";
 
 export { eatDay, netPnl };
@@ -19,7 +20,7 @@ export function bookPaperClosure(position: OpenPosition, options?: { ref: string
     id: id(), positionId: position.id, ref: options?.ref ?? position.ref, accountId: position.accountId,
     accountLabel: position.accountLabel, broker: position.broker, environment: position.environment, symbol: position.symbol,
     side: position.side, size: options?.size ?? position.size, sizeUnit: position.sizeUnit, entry: position.entry, exit: position.current,
-    sl: position.sl, tp: position.tp, gross: options?.pnl ?? position.pnl, commission: 0, swap: 0, risk: null,
+    sl: position.sl, tp: position.tp, gross: options?.pnl ?? position.pnl, commission: 0, swap: 0, risk: originalPositionRisk(position,options?.size),
     openedAt: position.openedTimestamp ?? null, closedAt,
     source: position.source === "Scheduled" ? "Schedule" : position.source === "Co-Pilot" ? "AI" : position.source,
     sourceRef: position.sourceRef,
@@ -29,6 +30,7 @@ export function bookPaperClosure(position: OpenPosition, options?: { ref: string
   if (row.broker === "paper") tradeLedgerEntries(row,"Simulated").forEach(postFinanceLedger);
 }
 
+export const readTradeRiskHistory = () => records;
 export const getTradeRecords = () => latency(records);
 export const getTradeJournal = () => latency({ notes, digestEnabled });
 export async function addJournalNote(input: Omit<JournalNote, "id" | "screenshot"> & { screenshot?: File }) {

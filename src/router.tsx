@@ -1,3 +1,4 @@
+import { Route as riskFileRoute } from "@/routes/dashboard/risk";
 import { Route as copilotFileRoute } from "@/routes/dashboard/copilot";
 import { Route as transfersFileRoute } from "@/routes/dashboard/transfers";
 import { Route as withdrawalsFileRoute } from "@/routes/dashboard/withdrawals";
@@ -224,12 +225,8 @@ const transfersMount = { id: "/transfers", path: "/transfers", getParentRoute: (
 const dashTransfersRoute = transfersFileRoute.update(transfersMount);
 const copilotMount = { id: "/copilot", path: "/copilot", getParentRoute: () => dashboardShellRoute, component: copilotFileRoute.options.component };
 const dashCopilotRoute = copilotFileRoute.update(copilotMount);
-const dashRiskRoute = dashStub(
-  "risk",
-  "T-14",
-  "Risk & Guardrails",
-  "Daily loss caps, max lot limits, duplicate shields, and kill-switch audit log."
-);
+const riskMount = { id: "/risk", path: "/risk", getParentRoute: () => dashboardShellRoute, component: riskFileRoute.options.component };
+const dashRiskRoute = riskFileRoute.update(riskMount);
 const dashNotificationsRoute = dashStub(
   "notifications",
   "T-15",
@@ -285,7 +282,7 @@ export function getRouter() {
   // The standalone preview opens the current co-pilot workspace. Explicit hash links retain all pages.
   if (!startTarget && typeof window !== "undefined" && !window.location.hash) {
     const path = window.location.pathname;
-    appHistory.replace(path === "/" || path.endsWith("/index.html") ? "/dashboard/copilot" : path);
+    appHistory.replace(path === "/" || path.endsWith("/index.html") ? "/dashboard/risk" : path);
   }
   return createRouter({ routeTree, history: appHistory, scrollRestoration: true, defaultPreload: "intent" });
 }

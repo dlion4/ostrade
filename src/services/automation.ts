@@ -1,3 +1,4 @@
+import { isAutomationPaused } from "./dashboard";
 import { mappedBrokerSymbol } from "./symbolMappings";
 // T-5 service layer. Every read/write goes through these future REST-shaped calls.
 import {
@@ -422,7 +423,7 @@ export async function runDryRun(draft: RuleDraft, days: number, saveToRule = fal
   const [accounts] = await Promise.all([getAccounts()]);
   const start = AUTOMATION_SNAPSHOT - days * 86_400_000;
   const scoped = sampleSignals.filter((s) => s.receivedAt >= start);
-  const rows = previewDraft(draft, scoped, accounts, 0, false);
+  const rows = previewDraft(draft, scoped, accounts.filter(a=>!isAutomationPaused(a.id,draft.id)), 0, isAutomationPaused(undefined,draft.id));
   const executedRows = rows.filter((r) => r.decision === "EXECUTE");
   const skipped = rows.filter((r) => r.guard === "SKIPPED").length;
   const blocked = rows.filter((r) => r.guard === "BLOCKED").length;

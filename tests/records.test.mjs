@@ -20,7 +20,7 @@ test('unified history uses typed closed positions and computes net USD from sign
 
 test('only closed paper lots enter history; partial and final closes retain order origin and journal', async () => {
   const before = await api.getTradeRecords();
-  const order = await api.placeDashboardOrder({ accountId: 'acc-paper-main', symbol: 'EURUSD', side: 'BUY', size: 0.40, entry: 1.082, sl: 1.071, tp: 1.087, origin: 'Signal', sourceRef: 'SIG-TEST', sourceLabel: 'Test channel' });
+  const order = await api.placeDashboardOrder({ accountId: 'acc-paper-main', symbol: 'EURUSD', side: 'BUY', size: 0.40, entry: 1.082, sl: 1.079, tp: 1.087, origin: 'Signal', sourceRef: 'SIG-TEST', sourceLabel: 'Test channel' });
   const open = (await api.getPositions()).find(p => p.ref === order.ref);
   assert.ok(open);
   assert.equal((await api.getTradeRecords()).length, before.length);
@@ -35,7 +35,7 @@ test('only closed paper lots enter history; partial and final closes retain orde
   assert.equal(full.size, 0.25);
   assert.equal(records.find(r => r.ref === partial.ref).size, 0.15);
   assert.deepEqual((await api.getPositionJournal(open.id))[0].tags, ['mistake', 'setup']);
-  const inert = await api.placeDashboardOrder({ accountId: 'acc-exness-trial', symbol: 'EURUSD', side: 'BUY', size: 0.4, entry: 1.082, sl: 1.071, tp: 1.087 });
+  const inert = await api.placeDashboardOrder({ accountId: 'acc-exness-trial', symbol: 'EURUSD', side: 'BUY', size: 0.4, entry: 1.082, sl: 1.079, tp: 1.087 });
   assert.equal(inert.mode, 'ready');
   assert.equal((await api.getTradeRecords()).length, records.length);
 });

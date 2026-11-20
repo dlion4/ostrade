@@ -16,6 +16,7 @@ import { Route as DashboardCopilotRouteImport } from './routes/dashboard/copilot
 import { Route as DashboardDepositsRouteImport } from './routes/dashboard/deposits'
 import { Route as DashboardPositionsRouteImport } from './routes/dashboard/positions'
 import { Route as DashboardRecordsRouteImport } from './routes/dashboard/records'
+import { Route as DashboardRiskRouteImport } from './routes/dashboard/risk'
 import { Route as DashboardSchedulerRouteImport } from './routes/dashboard/scheduler'
 import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals'
 import { Route as DashboardTransfersRouteImport } from './routes/dashboard/transfers'
@@ -56,6 +57,11 @@ const DashboardRecordsRoute = DashboardRecordsRouteImport.update({
   path: '/records',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardRiskRoute = DashboardRiskRouteImport.update({
+  id: '/risk',
+  path: '/risk',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSchedulerRoute = DashboardSchedulerRouteImport.update({
   id: '/scheduler',
   path: '/scheduler',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/deposits': typeof DashboardDepositsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
   '/dashboard/records': typeof DashboardRecordsRoute
+  '/dashboard/risk': typeof DashboardRiskRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/dashboard/deposits': typeof DashboardDepositsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
   '/dashboard/records': typeof DashboardRecordsRoute
+  '/dashboard/risk': typeof DashboardRiskRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/dashboard/deposits': typeof DashboardDepositsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
   '/dashboard/records': typeof DashboardRecordsRoute
+  '/dashboard/risk': typeof DashboardRiskRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/dashboard/deposits'
     | '/dashboard/positions'
     | '/dashboard/records'
+    | '/dashboard/risk'
     | '/dashboard/scheduler'
     | '/dashboard/signals'
     | '/dashboard/transfers'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/dashboard/deposits'
     | '/dashboard/positions'
     | '/dashboard/records'
+    | '/dashboard/risk'
     | '/dashboard/scheduler'
     | '/dashboard/signals'
     | '/dashboard/transfers'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/dashboard/deposits'
     | '/dashboard/positions'
     | '/dashboard/records'
+    | '/dashboard/risk'
     | '/dashboard/scheduler'
     | '/dashboard/signals'
     | '/dashboard/transfers'
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRecordsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/risk': {
+      id: '/dashboard/risk'
+      path: '/risk'
+      fullPath: '/dashboard/risk'
+      preLoaderRoute: typeof DashboardRiskRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/scheduler': {
       id: '/dashboard/scheduler'
       path: '/scheduler'
@@ -252,6 +271,7 @@ interface DashboardRouteChildren {
   DashboardDepositsRoute: typeof DashboardDepositsRoute
   DashboardPositionsRoute: typeof DashboardPositionsRoute
   DashboardRecordsRoute: typeof DashboardRecordsRoute
+  DashboardRiskRoute: typeof DashboardRiskRoute
   DashboardSchedulerRoute: typeof DashboardSchedulerRoute
   DashboardSignalsRoute: typeof DashboardSignalsRoute
   DashboardTransfersRoute: typeof DashboardTransfersRoute
@@ -265,6 +285,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDepositsRoute: DashboardDepositsRoute,
   DashboardPositionsRoute: DashboardPositionsRoute,
   DashboardRecordsRoute: DashboardRecordsRoute,
+  DashboardRiskRoute: DashboardRiskRoute,
   DashboardSchedulerRoute: DashboardSchedulerRoute,
   DashboardSignalsRoute: DashboardSignalsRoute,
   DashboardTransfersRoute: DashboardTransfersRoute,

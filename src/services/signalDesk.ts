@@ -25,6 +25,7 @@ import {
   getAccounts,
   getSignalAttribution,
   placeDashboardOrder,
+  admitDashboardOrder,
   recordDeskEvent,
   type TradingAccount,
 } from "./dashboard";
@@ -431,16 +432,7 @@ export function buildRoutes(
                                         ? "Take profit is on the wrong side of entry."
                                         : spread > options.spreadCap
                                           ? `Spread ${spread} exceeds your cap of ${options.spreadCap}.`
-                                          : unit === "stake" && size > 200
-                                            ? "The $200 maximum contract stake would be exceeded."
-                                            : sl &&
-                                                Math.abs(o.entry - sl) *
-                                                  size *
-                                                  c *
-                                                  dollarRate >
-                                                  200
-                                              ? "The estimated loss at the stop exceeds the $200 per-trade guard. Reduce the size."
-                                              : "";
+                                          : "";
           return {
             signalId: row.id,
             account,
@@ -512,7 +504,10 @@ export function executeSignals(
           });
           return { ...base, ref, status: "Blocked", message: leg.error };
         }
-        if (a.environment !== "paper") {
+        const guardInput={accountId:a.id,symbol:leg.symbol,side:o.side as "BUY"|"SELL",size:leg.size,entry:o.entry,sl:leg.sl,tp:leg.tp,origin:"Signal" as const,sourceRef:leg.signalId};
+        if (a.broker !== "paper" || a.environment !== "paper") {
+          const guard=admitDashboardOrder(guardInput,true);
+          if(guard.outcome)return {...base,ref:guard.auditId,status:"Blocked",message:guard.outcome.detail};
           const ref = recordDeskEvent({
             ...entry,
             status: "Staged",
@@ -537,6 +532,8 @@ export function executeSignals(
                 ? s.ask >= o.entry
                 : s.bid <= o.entry;
           if (!crossed) {
+            const guard=admitDashboardOrder(guardInput,true);
+            if(guard.outcome)return {...base,ref:guard.auditId,status:"Blocked",message:guard.outcome.detail};
             const ref = recordDeskEvent({
               ...entry,
               status: "Staged",
@@ -602,8 +599,8 @@ export function executeSignals(
           id: uid(),
           signalId: r.id,
           symbol: r.order.symbol,
-          type: "Malformed",
-          reason: legs[0]?.message || "No eligible leg",
+          type: legs.some(l=>l.message.includes("prior signal submissions"))?"Storm":legs.some(l=>l.message.includes("Matching fill"))?"Duplicate":"Malformed",
+          reason: legs.find(l=>l.status==="Blocked")?.message || "No eligible leg",
           time: now(),
         });
     });
