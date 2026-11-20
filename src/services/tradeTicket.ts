@@ -1,3 +1,4 @@
+import { mappedBrokerSymbol } from "./symbolMappings";
 // T-3 Trade Ticket service layer.
 // TanStack Query consumes ONLY these functions — pages never import src/data directly.
 import {
@@ -161,6 +162,8 @@ export interface FanoutTicketInput {
   side: "BUY" | "SELL";
   timeInForce: TimeInForce;
   comment: string;
+  overrideReason?: string;
+  carry?: import("@/data/risk").CarryIntent;
   legs: FanoutLegInput[];
 }
 
@@ -206,41 +209,7 @@ export async function submitFanoutTicket(
     );
     if (!acc) continue;
 
-    const brokerSym = sym?.brokerSymbols[acc.broker];
-    if (!sym || !brokerSym) {
-      blockedCount += 1;
-      receipts.push({
-        accountId: acc.id,
-        accountLabel: acc.label,
-        broker: acc.broker,
-        brokerName: acc.brokerName,
-        brokerSymbol: "—",
-        size: leg.size,
-        status: "blocked",
-        fillPrice: "—",
-        ticketId: "BLOCKED-MAP",
-        message: `${input.canonical} is not offered on ${acc.brokerName}.`,
-      });
-      continue;
-    }
-
-    if (leg.size < sym.minVolume || leg.size > sym.maxVolume) {
-      blockedCount += 1;
-      receipts.push({
-        accountId: acc.id,
-        accountLabel: acc.label,
-        broker: acc.broker,
-        brokerName: acc.brokerName,
-        brokerSymbol: brokerSym,
-        size: leg.size,
-        status: "blocked",
-        fillPrice: "—",
-        ticketId: "BLOCKED-SIZE",
-        message: `Size ${leg.size} outside ${sym.minVolume}–${sym.maxVolume} ${sym.volumeUnit}.`,
-      });
-      continue;
-    }
-
+    const brokerSym = mappedBrokerSymbol(sym, acc) ?? "—";
     const res = await placeDashboardOrder({
       accountId: acc.id,
       symbol: input.canonical,
@@ -250,6 +219,8 @@ export async function submitFanoutTicket(
       sl: leg.sl,
       tp: leg.tp,
       origin: "Manual",
+      overrideReason: input.overrideReason,
+      carry: input.carry,
       channelNote: `${input.orderType} · ${input.timeInForce}${input.comment ? ` · ${input.comment}` : ""}`,
     });
 
@@ -263,7 +234,7 @@ export async function submitFanoutTicket(
         brokerSymbol: brokerSym,
         size: leg.size,
         status: "filled",
-        fillPrice: leg.entry.toFixed(sym.digits),
+        fillPrice: leg.entry.toFixed(sym?.digits??2),
         ticketId: res.ref,
         message: `Simulated ${input.orderType} fill recorded to Positions & Records.`,
       });

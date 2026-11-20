@@ -1,3 +1,4 @@
+import { useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -59,6 +60,7 @@ function GuideDialog({ onClose, onStart }: { onClose: () => void; onStart: () =>
 }
 
 export function DashAutomationPage() {
+  const { recordSource } = useSearch({ from: "/dashboard/automation" });
   usePageStyle("dash-signal-automation", css);
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -97,11 +99,13 @@ export function DashAutomationPage() {
 
   useEffect(() => {
     if (!setup.data || initialised) return;
-    const source = setup.data.rules.find((rule) => rule.enabled) ?? setup.data.rules[0];
+    const linked = setup.data.rules.find((rule) => rule.id === recordSource);
+    const source = linked ?? setup.data.rules.find((rule) => rule.enabled) ?? setup.data.rules[0];
     const base = source ? ruleToDraft(source, accounts) : newDraft(accounts);
     setDraft(base);
     setInitialised(true);
-  }, [setup.data, accounts, initialised]);
+    if (linked) scrollTo("builder");
+  }, [setup.data, accounts, initialised, recordSource]);
 
   const refresh = useCallback(() => {
     for (const key of ["automation-page", "automation-audit", "automation-stats", "signal-rules", "accounts"]) void queryClient.invalidateQueries({ queryKey: [key] });

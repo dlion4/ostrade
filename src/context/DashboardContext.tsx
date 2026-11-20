@@ -3,19 +3,21 @@ import {
   useCallback,
   useContext,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
-import type { KillSwitchMode } from "@/services/dashboard";
+import { getLocalKillSwitch, subscribeKillSwitch, type KillSwitchMode } from "@/services/dashboard";
 
 export type GlobalWorkspaceMode = "paper" | "live";
 
 interface DashboardContextValue {
   activeAccountId: string; // "all" or specific accountId
   setActiveAccountId: (id: string) => void;
+  fanoutAccountIds: string[];
+  setFanoutAccountIds: (ids: string[]) => void;
   globalMode: GlobalWorkspaceMode;
   setGlobalMode: (mode: GlobalWorkspaceMode) => void;
   killSwitch: KillSwitchMode;
-  setKillSwitch: (mode: KillSwitchMode) => void;
 }
 
 const DashboardCtx = createContext<DashboardContextValue | null>(null);
@@ -37,7 +39,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  const [killSwitch, setKillSwitch] = useState<KillSwitchMode>("armed");
+  const [fanoutAccountIds, setFanoutState] = useState<string[]>(() => {
+    try { const saved: unknown = JSON.parse(localStorage.getItem("os-fanout-accounts") ?? "[]"); return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : []; } catch { return []; }
+  });
+  const setFanoutAccountIds = useCallback((ids: string[]) => {
+    setFanoutState(ids);
+    try { localStorage.setItem("os-fanout-accounts", JSON.stringify(ids)); } catch { /* storage optional */ }
+  }, []);
+
+  const killSwitch = useSyncExternalStore(subscribeKillSwitch,getLocalKillSwitch,()=>"armed" as const);
 
   const setActiveAccountId = useCallback((id: string) => {
     setActiveAccountState(id);
@@ -62,10 +72,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       value={{
         activeAccountId,
         setActiveAccountId,
+        fanoutAccountIds,
+        setFanoutAccountIds,
         globalMode,
         setGlobalMode,
         killSwitch,
-        setKillSwitch,
       }}
     >
       {children}

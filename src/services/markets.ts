@@ -1,3 +1,5 @@
+import { getAccounts } from "./dashboard";
+import { mappedBrokerSymbol } from "./symbolMappings";
 // T-2 Markets service layer. TanStack Query consumes only these functions.
 // Candles/ticks are deterministic static snapshots — nothing random-walks over time.
 import { seededRandom, roundTo } from "@/data/_seed";
@@ -19,7 +21,7 @@ import {
 } from "@/data/markets";
 import { latency } from "./_latency";
 
-export { ASSET_CLASSES };
+export { ASSET_CLASSES, mappedBrokerSymbol };
 export type { AlertCondition, AssetClass, MappingOverride, MarketSymbol, PriceAlert, SessionWindow };
 
 export type Timeframe = "1m" | "5m" | "15m" | "1H" | "4H" | "1D" | "1W";
@@ -225,23 +227,23 @@ function similarity(a: string, b: string): number {
 }
 
 export async function resolveSymbol(input: string, accountId: string): Promise<ResolutionResult> {
-  const acc = tradingAccounts.find((a) => a.id === accountId) ?? tradingAccounts[0];
+  const acc = (await getAccounts()).find((a) => a.id === accountId) ?? tradingAccounts[0];
   const raw = input.trim();
   const lower = raw.toLowerCase();
   const steps: ResolutionStep[] = [];
   const base = { input: raw, accountId: acc.id, accountLabel: acc.label, broker: acc.broker };
 
   // 1. exact match on (account.broker, canonical) — or broker symbol, or a saved mapping
-  const saved = [...readPersistedMappings(), ...initialMappingOverrides].find((m) => m.broker === acc.broker && m.input.toLowerCase() === lower);
-  const exactCanon = marketSymbols.find((s) => s.canonical.toLowerCase() === lower || s.brokerSymbols[acc.broker]?.toLowerCase() === lower);
+  const saved = [...readPersistedMappings(), ...initialMappingOverrides].find((m) => m.broker === acc.broker && m.accountLabel === acc.label && m.input.toLowerCase() === lower);
+  const exactCanon = marketSymbols.find((s) => s.canonical.toLowerCase() === lower || mappedBrokerSymbol(s, acc)?.toLowerCase() === lower);
   if (saved) {
     steps.push({ step: 1, label: "Exact / saved mapping", status: "matched", detail: `Saved ${saved.method} mapping from ${saved.confirmedEat}.` });
     steps.push({ step: 2, label: "Account-type suffix", status: "skipped", detail: "Not needed — resolved in step 1." });
     steps.push({ step: 3, label: "AI mapper fallback", status: "skipped", detail: "Not needed — resolved in step 1." });
-    return latency({ ...base, canonical: saved.canonical, brokerSymbol: saved.brokerSymbol, confidence: saved.confidence, method: "exact" as const, needsConfirmation: false, steps }, 420, 720);
+    return latency({ ...base, canonical: saved.canonical, brokerSymbol: mappedBrokerSymbol(marketSymbols.find((s) => s.canonical === saved.canonical), acc) ?? saved.brokerSymbol, confidence: saved.confidence, method: "exact" as const, needsConfirmation: false, steps }, 420, 720);
   }
   if (exactCanon) {
-    const bs = exactCanon.brokerSymbols[acc.broker] ?? null;
+    const bs = mappedBrokerSymbol(exactCanon, acc) ?? null;
     steps.push({ step: 1, label: "Exact match", status: bs ? "matched" : "miss", detail: bs ? `${acc.brokerName} lists ${exactCanon.canonical} as ${bs}.` : `${exactCanon.canonical} exists, but ${acc.brokerName} does not list it.` });
     steps.push({ step: 2, label: "Account-type suffix", status: "skipped", detail: bs ? "Not needed — resolved in step 1." : "No suffix variant offered." });
     steps.push({ step: 3, label: "AI mapper fallback", status: "skipped", detail: bs ? "Not needed." : "Blocked — the instrument is not offered on this account." });
@@ -252,10 +254,10 @@ export async function resolveSymbol(input: string, accountId: string): Promise<R
   // 2. account-type-aware suffix (m / c / z) and broker prefixes
   const norm = stripBrokerAffixes(raw);
   const suffixHit = marketSymbols.find((s) => s.canonical.toLowerCase().replace(/[_]/g, "") === norm);
-  if (suffixHit && suffixHit.brokerSymbols[acc.broker]) {
-    steps.push({ step: 2, label: "Account-type suffix", status: "matched", detail: `Stripped prefix/suffix → ${suffixHit.canonical}; ${acc.brokerName} symbol ${suffixHit.brokerSymbols[acc.broker]}.` });
+  if (suffixHit && mappedBrokerSymbol(suffixHit, acc)) {
+    steps.push({ step: 2, label: "Account-type suffix", status: "matched", detail: `Stripped prefix/suffix → ${suffixHit.canonical}; ${acc.brokerName} symbol ${mappedBrokerSymbol(suffixHit, acc)}.` });
     steps.push({ step: 3, label: "AI mapper fallback", status: "skipped", detail: "Not needed — resolved in step 2." });
-    return latency({ ...base, canonical: suffixHit.canonical, brokerSymbol: suffixHit.brokerSymbols[acc.broker] ?? null, confidence: 0.97, method: "suffix" as const, needsConfirmation: false, steps }, 420, 720);
+    return latency({ ...base, canonical: suffixHit.canonical, brokerSymbol: mappedBrokerSymbol(suffixHit, acc) ?? null, confidence: 0.97, method: "suffix" as const, needsConfirmation: false, steps }, 420, 720);
   }
   steps.push({ step: 2, label: "Account-type suffix", status: "miss", detail: "No m / c / z suffix or frx / cry / OTC_ prefix variant matched." });
 
@@ -267,19 +269,19 @@ export async function resolveSymbol(input: string, accountId: string): Promise<R
     if (s) best = { s, score: 0.86 };
   } else {
     marketSymbols.forEach((s) => {
-      if (!s.brokerSymbols[acc.broker]) return;
+      if (!mappedBrokerSymbol(s, acc)) return;
       const score = Math.max(similarity(norm, s.canonical.toLowerCase()), similarity(lower, s.name.toLowerCase()) * 0.92);
       if (!best || score > best.score) best = { s, score };
     });
   }
   const found = best as { s: MarketSymbol; score: number } | null;
-  if (!found || found.score < 0.45 || !found.s.brokerSymbols[acc.broker]) {
+  if (!found || found.score < 0.45 || !mappedBrokerSymbol(found.s, acc)) {
     steps.push({ step: 3, label: "AI mapper fallback", status: "miss", detail: "No candidate above 0.45 confidence. The order would be blocked, never substituted." });
     return latency({ ...base, canonical: null, brokerSymbol: null, confidence: found ? roundTo(found.score, 2) : 0, method: "none" as const, needsConfirmation: false, steps }, 420, 720);
   }
   const confidence = roundTo(Math.min(found.score, 0.95), 2);
-  steps.push({ step: 3, label: "AI mapper fallback", status: "matched", detail: `Best candidate ${found.s.canonical} (${found.s.brokerSymbols[acc.broker]}) at ${Math.round(confidence * 100)}% confidence.` });
-  return latency({ ...base, canonical: found.s.canonical, brokerSymbol: found.s.brokerSymbols[acc.broker] ?? null, confidence, method: "ai" as const, needsConfirmation: confidence < 0.9, steps }, 520, 820);
+  steps.push({ step: 3, label: "AI mapper fallback", status: "matched", detail: `Best candidate ${found.s.canonical} (${mappedBrokerSymbol(found.s, acc)}) at ${Math.round(confidence * 100)}% confidence.` });
+  return latency({ ...base, canonical: found.s.canonical, brokerSymbol: mappedBrokerSymbol(found.s, acc) ?? null, confidence, method: "ai" as const, needsConfirmation: confidence < 0.9, steps }, 520, 820);
 }
 
 export async function confirmSymbolMapping(result: ResolutionResult): Promise<MappingOverride> {

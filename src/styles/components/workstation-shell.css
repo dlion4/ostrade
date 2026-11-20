@@ -278,3 +278,5 @@
 @media (prefers-reduced-motion: reduce) {
   .os-desk-shell * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+.os-desk-shell:is(.os-desk-records,.os-desk-accounts,.os-desk-deposits,.os-desk-withdrawals,.os-desk-transfers,.os-desk-copilot,.os-desk-risk) .os-dash-main { padding: 0; overflow: visible; }

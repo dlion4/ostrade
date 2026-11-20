@@ -17,14 +17,22 @@
     "@tanstack/react-router": "^1.170.46",
     "@tanstack/react-start": "1.168.61",
     "@tanstack/react-table": "^8.21.3",
+<<<<<<< HEAD
     "bootstrap": "^5.3.9",
     "bootstrap-icons": "^1.13.2",
+=======
+    "bootstrap": "5.3.9",
+>>>>>>> 326c489702009c1337bba43a812f3c40dad9af9e
     "clsx": "2.1.1",
+    "jspdf": "4.2.1",
     "lucide-react": "^1.76.0",
+    "qrcode-generator": "2.0.4",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "react-hook-form": "^7.92.0",
+    "read-excel-file": "9.3.20",
     "tailwind-merge": "3.4.0",
+    "write-excel-file": "4.1.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {

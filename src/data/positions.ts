@@ -25,7 +25,7 @@ export interface PendingOrder {
   placedAt: string;
   expiry: string;
   status: "active" | "canceled" | "triggered";
-  source: "Signal" | "Manual" | "Scheduled";
+  source: "Signal" | "Manual" | "Scheduled" | "Co-Pilot";
   comment: string;
 }
 
