@@ -92,7 +92,6 @@ let guardEvents = structuredClone(seedGuardEvents);
 let policy = { ...defaultGuardPolicy };
 let receipts: Receipt[] = [];
 let nextId = 249;
-let previewSecret = "os_preview_47b19f2c";
 const started = Date.now();
 const now = () => snapshotAt + Date.now() - started;
 const uid = () => crypto.randomUUID();
@@ -106,7 +105,6 @@ export const getDeskSetup = () =>
       first: starterText,
       parsed: parse(starterText, "telegram"),
       csvExample: importExample,
-      secret: previewSecret,
       snapshotAt,
     },
     300,
@@ -772,8 +770,4 @@ export async function configureSource(id: SourceKey, value: string) {
     350,
     590,
   );
-}
-export async function rotatePreviewSecret() {
-  previewSecret = `os_preview_${uid().slice(0, 8)}`;
-  return latency(previewSecret, 300, 440);
 }

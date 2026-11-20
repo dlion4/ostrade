@@ -1,3 +1,4 @@
+import { publishNotice } from "./notificationStore";
 import { readyMessage } from "@/data/accounts";
 import { tradingAccounts, type TradingAccount } from "@/data/dashboard";
 import type { FinanceEntryType, FinanceLedgerEntry, FundingCurrency } from "@/data/finance";
@@ -78,6 +79,7 @@ export async function requestTransfer(input:TransferInput & {totp:string}) {
     postFinanceLedger({id:ledgerRef,txType:"TRANSFER_OUT",debitAccountId:q.from.id,creditAccountId:q.to.id,currencyNative:"USD",amountNative:q.amount,amountUSD:q.amount,sourceRef:ref,accountLabel:q.from.label,postedAt:at,memo:"Paired local Paper transfer",origin:"Simulated",balanceAfterDebit:sourceBalance,balanceAfterCredit:destinationBalance});
   }
   rows.unshift(row);
+  if (local) publishNotice({event:"transfer.completed",title:"Paper transfer posted",body:"Both Paper balances were updated in the local ledger. No funds moved.",ref:row.ref,id:`transfer.completed:${row.ref}`,accountLabel:row.accountLabel});
   log({action:local?"Paper transfer posted":"Transfer preview staged",outcome:local?"Simulated":"Offline",verification:"Example TOTP",ref,detail:`${q.from.label} → ${q.to.label} · ${q.currency} ${q.amount.toFixed(2)} · ${q.legs.length} leg${q.legs.length===1?"":"s"}.`});
   return latency(row);
 }

@@ -1,3 +1,5 @@
+import { brokerVisible, readPreferences } from "./workspacePreferences";
+import { hasReadNotice, publishNotice, updateRead } from "./notificationStore";
 import { mappedBrokerSymbol } from "./symbolMappings";
 import { marketSymbols } from "@/data/markets";
 // Dashboard service layer (T-1..T-16).
@@ -83,7 +85,7 @@ let schedulesStore: DashboardSchedule[] = structuredClone(initialSchedules);
 let usedSlotsCount = 18; // matches blueprint "18 / 50 slots"
 let rulesStore: SignalRule[] = structuredClone(initialSignalRules);
 let copilotStore: CopilotProposal[] = structuredClone(initialCopilotProposals);
-let alertsStore: DashboardAlert[] = structuredClone(initialAlerts);
+const alertsStore: DashboardAlert[] = structuredClone(initialAlerts);
 let recordsStore: JournalRecord[] = structuredClone(initialRecords);
 let eventsStore: EconomicEvent[] = structuredClone(initialEconomicEvents);
 let refCounter = 148;
@@ -94,7 +96,7 @@ export function subscribeKillSwitch(listener:()=>void){killListeners.add(listene
 export function isAutomationPaused(accountId?:string, ruleId?:string) {
   return killSwitchStore!=="armed" || lockdown || (!!accountId&&accountPauses.has(accountId)) || (!!ruleId&&rulePauses.has(ruleId));
 }
-export const evaluateWorkspaceOrder = (ticket:RiskTicket, ruleRef?:string) => evaluateTicket(ticket,{accounts:accountsStore,positions:positionsStore,records:readTradeRiskHistory(),state:killSwitchStore,ruleRef});
+export const evaluateWorkspaceOrder = (ticket:RiskTicket, ruleRef?:string) => evaluateTicket(ticket,{accounts:accountsStore.filter(a=>brokerVisible(a.broker)),positions:positionsStore,records:readTradeRiskHistory(),state:killSwitchStore,ruleRef});
 
 function nextOrderRef(): string {
   refCounter += 1;
@@ -108,7 +110,9 @@ function eatTimestamp(): string {
 /* ───────────────── Queries ───────────────── */
 
 export const getAccounts = (): Promise<TradingAccount[]> =>
-  latency(accountsStore, 300, 520);
+  latency(accountsStore.filter(a=>brokerVisible(a.broker)), 300, 520);
+
+export const getBrokerDefaults = () => latency(readPreferences().brokers);
 
 export async function createPaperAccount(input: { label: string; startingBalance: number }) {
   const label = input.label.trim();
@@ -244,7 +248,7 @@ export const getCopilotProposals = (): Promise<CopilotProposal[]> =>
   latency(copilotStore, 300, 520);
 
 export const getAlerts = (): Promise<DashboardAlert[]> =>
-  latency(alertsStore, 300, 480);
+  latency(alertsStore.map(a=>({...a,acknowledged:hasReadNotice(a.id)})), 300, 480);
 
 export const getRecentRecords = (
   accountId: string = "all"
@@ -317,7 +321,12 @@ export function admitDashboardOrder(input:PlaceDashboardOrderInput, staging=fals
 export async function placeDashboardOrder(input: PlaceDashboardOrderInput): Promise<DashboardMutationOutcome> {
   const checked=admitDashboardOrder(input);
   const acc=accountsStore.find(a=>a.id===input.accountId);
-  if(checked.outcome||!acc) return latency({mode:"blocked",ref:checked.auditId,title:checked.outcome?.label??"Account unavailable",detail:checked.outcome?.detail??"Select an existing account before submitting an order."});
+  if(checked.outcome||!acc){
+    const title=checked.outcome?.label??"Account unavailable";
+    const body=checked.outcome?.detail??"Select an existing account before submitting an order.";
+    publishNotice({event:!checked.outcome||["market","capability","bounds","protective"].includes(checked.outcome.id)?"order.rejected":"guard.blocked",id:`guard:${checked.auditId}`,title:`Order blocked · ${title}`,body,ref:checked.auditId,accountLabel:acc?.label,severity:checked.outcome?.id==='circuit'?'Critical':undefined});
+    return latency({mode:"blocked",ref:checked.auditId,title:checked.outcome?.label??"Account unavailable",detail:body});
+  }
 
   // Paper accounts simulate locally end-to-end
   if (checked.ref) {
@@ -368,6 +377,7 @@ export async function placeDashboardOrder(input: PlaceDashboardOrderInput): Prom
       },
       ...recordsStore,
     ];
+    publishNotice({event:"order.filled",id:`fill:${ref}`,ref,title:`${newPos.symbol} ${newPos.side} filled on Paper`,body:`${newPos.size} ${newPos.sizeUnit} filled in the local simulator and logged to Records.`,accountLabel:acc.label});
     return latency(
       {
         mode: "simulated" as const,
@@ -756,18 +766,12 @@ export async function acknowledgeAlert(
   alertId: string
 ): Promise<{ id: string; acknowledged: boolean }> {
   const alert = alertsStore.find((a) => a.id === alertId);
-  if (alert) alert.acknowledged = true;
+  if (alert) updateRead([alertId]);
   return latency({ id: alertId, acknowledged: true }, 240, 420);
 }
 
 export async function acknowledgeAllAlerts(): Promise<{ count: number }> {
-  let count = 0;
-  alertsStore.forEach((a) => {
-    if (!a.acknowledged) {
-      a.acknowledged = true;
-      count += 1;
-    }
-  });
+  const count = updateRead(alertsStore.map(a=>a.id));
   return latency({ count }, 300, 480);
 }
 
@@ -942,6 +946,7 @@ export async function applyKillSwitch(
   if(!options?.quiet){
     markEngagement({at:new Date().toISOString(),reason:safeRiskText(reason),command:nextState,ref});
     addRiskAudit({category:"Control",mode:"Live local",rule:title,scope:"Workspace",subject:"Emergency control",decision:"PASS",reason:safeRiskText(reason),detail,ref});
+    if(nextState!=="armed")publishNotice({event:"killswitch.engaged",id:`switch:${ref}`,title,body:detail,ref});
   }
   recordsStore=[{id:`rec-${ref}`,ref,timeEat:eatTimestamp(),accountId:"acc-paper-main",accountLabel:"Workspace",broker:"paper",origin:"Guard",symbol:"ALL",side:"—",status:"Staged",summary:title,impact:nextState.toUpperCase()},...recordsStore];
   return latency({mode:"simulated",ref,title,detail},350,600);

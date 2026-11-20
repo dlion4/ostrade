@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,7 +12,6 @@ import {
   KeyRound,
   Link2,
   LoaderCircle,
-  RotateCw,
   ShieldCheck,
   Upload,
 } from "lucide-react";
@@ -20,7 +20,6 @@ import {
   configureSource,
   getDeskSetup,
   importSignals,
-  rotatePreviewSecret,
   type DeskSignal,
   type SourceKey,
 } from "@/services/signalDesk";
@@ -46,7 +45,6 @@ export function SourceDialog({
     [value, setValue] = useState(
       setup.sources.find((s) => s.id === initial)!.value,
     ),
-    [secret, setSecret] = useState(setup.secret),
     [result, setResult] = useState(""),
     [error, setError] = useState("");
   const src = setup.sources.find((s) => s.id === key)!;
@@ -60,14 +58,6 @@ export function SourceDialog({
       toast("Configuration checked locally");
     },
     onError: (e) => setError(e.message),
-  });
-  const rotate = useMutation({
-    mutationFn: rotatePreviewSecret,
-    onSuccess: (s) => {
-      setSecret(s);
-      qc.invalidateQueries({ queryKey: ["desk-setup"] });
-      toast("Local preview secret rotated");
-    },
   });
   return (
     <Dialog
@@ -133,19 +123,9 @@ export function SourceDialog({
           </label>
           {key === "webhook" && (
             <div className="os-secret">
-              <label className="os-field">
-                Preview signing secret
-                <input value={secret} readOnly />
-              </label>
+              <small className="os-muted-copy">Demo secrets are masked here. Use Workspace Settings to reveal, copy, or rotate them.</small>
               <div className="os-dialog-actions">
-                <CopyButton text={value} label="Copy URL" />
-                <button
-                  className="os-soft-button"
-                  disabled={rotate.isPending}
-                  onClick={() => rotate.mutate()}
-                >
-                  <RotateCw size={13} /> Rotate secret
-                </button>
+                <Link className="os-soft-button" to="/dashboard/settings" hash="st-webhooks">Manage webhook secrets</Link>
               </div>
             </div>
           )}

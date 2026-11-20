@@ -1,3 +1,4 @@
+import { publishNotice } from "./notificationStore";
 import { readyMessage } from "@/data/accounts";
 import { convertToUSD, depositAgents, sampleUsdKes, type CryptoNetwork } from "@/data/finance";
 import { brokerWithdrawalRails, cryptoWithdrawalNetworks, defaultWithdrawalPolicy, initialWithdrawalAudit, initialWithdrawalDestinations, initialWithdrawals, nativeAmount, statusLabels, withdrawalRails, type WithdrawalAudit, type WithdrawalDestination, type WithdrawalPolicy, type WithdrawalRailId, type WithdrawalRecord } from "@/data/withdrawals";
@@ -161,6 +162,7 @@ export async function requestWithdrawal(input: ConfirmWithdrawalInput) {
     proofs.set(row.proof.id, input.proof);
   }
   records.unshift(row);
+  if (simulate) publishNotice({event:"withdraw.settled",title:"Paper withdrawal settled",body:"A Paper debit was posted to the local ledger. No funds moved.",ref:row.ref,id:`withdraw.settled:${row.ref}`,accountLabel:row.accountLabel});
   writeAudit({ action: simulate ? "Paper debit posted" : "Request staged", ref, outcome: simulate ? "Simulated" : quote.cooling ? "Held" : "Offline", request: `${quote.account.label} · ${quote.rail.name} · ${row.currencyNative} ${row.amountNative.toFixed(2)} · ${row.destinationMasked}`, result: message });
   return latency(row);
 }

@@ -1,3 +1,4 @@
+import { publishNotice } from "./notificationStore";
 import { brokerRails, convertToUSD, depositAgents, fundingRails, initialDeposits, manualMethods, networkProfiles, recoveryReasons, sampleBanks, sampleUsdKes, supportUrls, type CryptoNetwork, type DepositDetails, type DepositRailId, type DepositRecord, type RecoveryEvent } from "@/data/finance";
 import { providerCapabilities, readyMessage } from "@/data/accounts";
 import { applySimulatedFunding, getAccounts } from "./dashboard";
@@ -117,6 +118,7 @@ export async function requestDeposit(input: DepositInput) {
     proofs.set(row.proof.id, input.proof);
   }
   store.unshift(row);
+  if (simulated) publishNotice({event:"deposit.confirmed",title:"Paper deposit confirmed",body:"A Paper top-up was posted to the local ledger. No funds moved.",ref:row.ref,id:`deposit.confirmed:${row.ref}`,accountLabel:row.accountLabel});
   return latency(row);
 }
 export async function getDepositProof(id: string) {

@@ -48,14 +48,13 @@ import {
 import { useTheme } from "@/hooks/useTheme";
 import { usePageStyle } from "@/hooks/usePageStyle";
 import {
-  acknowledgeAllAlerts,
   applyKillSwitch,
   getAccounts,
-  getAlerts,
   type BrokerKey,
   type EnvironmentKind,
   type KillSwitchMode,
 } from "@/services/dashboard";
+import { getNotificationOverview, notificationKey, notificationTime, subscribeNotifications, updateNotifications } from "@/services/notifications";
 import { useToast } from "./Toast";
 import stubCss from "@/styles/pages/stub.css?inline";
 
@@ -335,11 +334,11 @@ function DashboardShellInner() {
   const deskPage = useRouterState({
     select: (s) => {
       const path = s.location.pathname.replace(/\/$/, "");
-      return path === "/dashboard/signals" ? "signals" : path === "/dashboard/automation" ? "automation" : path === "/dashboard/records" ? "records" : path === "/dashboard/accounts" ? "accounts" : path === "/dashboard/deposits" ? "deposits" : path === "/dashboard/withdrawals" ? "withdrawals" : path === "/dashboard/transfers" ? "transfers" : path === "/dashboard/copilot" ? "copilot" : path === "/dashboard/risk" ? "risk" : null;
+      return path === "/dashboard/signals" ? "signals" : path === "/dashboard/automation" ? "automation" : path === "/dashboard/records" ? "records" : path === "/dashboard/accounts" ? "accounts" : path === "/dashboard/deposits" ? "deposits" : path === "/dashboard/withdrawals" ? "withdrawals" : path === "/dashboard/transfers" ? "transfers" : path === "/dashboard/copilot" ? "copilot" : path === "/dashboard/risk" ? "risk" : path === "/dashboard/notifications" ? "notifications" : path === "/dashboard/settings" ? "settings" : null;
     },
   });
   const desk = deskPage !== null;
-  const deskTitle = deskPage === "automation" ? "Automation engine" : deskPage === "records" ? "Records & Analytics" : deskPage === "accounts" ? "Accounts & Broker Hub" : deskPage === "deposits" ? "Deposits" : deskPage === "withdrawals" ? "Withdrawals" : deskPage === "transfers" ? "Transfers & Ledger" : deskPage === "copilot" ? "AI Co-Pilot" : deskPage === "risk" ? "Risk & Guardrails" : "Signal Desk";
+  const deskTitle = deskPage === "automation" ? "Automation engine" : deskPage === "records" ? "Records & Analytics" : deskPage === "accounts" ? "Accounts & Broker Hub" : deskPage === "deposits" ? "Deposits" : deskPage === "withdrawals" ? "Withdrawals" : deskPage === "transfers" ? "Transfers & Ledger" : deskPage === "copilot" ? "AI Co-Pilot" : deskPage === "risk" ? "Risk & Guardrails" : deskPage === "notifications" ? "Notifications & Alerts" : deskPage === "settings" ? "Workspace Settings" : "Signal Desk";
   const {
     activeAccountId,
     setActiveAccountId,
@@ -367,14 +366,18 @@ function DashboardShellInner() {
     queryFn: getAccounts,
   });
   const alertsQ = useQuery({
-    queryKey: ["alerts"],
-    queryFn: getAlerts,
+    queryKey: [...notificationKey, "overview"],
+    queryFn: getNotificationOverview,
   });
 
+  useEffect(()=>subscribeNotifications(()=>{
+    void qc.invalidateQueries({queryKey:notificationKey});
+    void qc.invalidateQueries({queryKey:["alerts"]});
+  }),[qc]);
   const ackAllMut = useMutation({
-    mutationFn: acknowledgeAllAlerts,
+    mutationFn: () => updateNotifications({action:"read-all"}),
     onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ["alerts"] });
+      qc.invalidateQueries({ queryKey: notificationKey });
       toast(
         res.count > 0
           ? `Acknowledged ${res.count} alerts`
@@ -408,10 +411,11 @@ function DashboardShellInner() {
   const connectedAccounts = (accountsQ.data ?? []).filter((a) => a.connected);
   const totalEquity = connectedAccounts.reduce((s, a) => s + a.equity, 0);
   const activeAccount = connectedAccounts.find((a) => a.id === activeAccountId);
-  const unreadAlerts = (alertsQ.data ?? []).filter((a) => !a.acknowledged);
+  const unreadAlerts = alertsQ.data?.recent ?? [];
+  const unreadCount = alertsQ.data?.unread ?? 0;
 
   return (
-    <div className={`os-dash-shell${desk ? ` os-desk-shell${deskPage === "records" ? " os-desk-records" : deskPage === "accounts" ? " os-desk-accounts" : deskPage === "deposits" ? " os-desk-deposits" : deskPage === "withdrawals" ? " os-desk-withdrawals" : deskPage === "transfers" ? " os-desk-transfers" : deskPage === "copilot" ? " os-desk-copilot" : deskPage === "risk" ? " os-desk-risk" : ` page-dash-signal-${deskPage}`}` : ""}`}>
+    <div className={`os-dash-shell${desk ? ` os-desk-shell${deskPage === "records" ? " os-desk-records" : deskPage === "accounts" ? " os-desk-accounts" : deskPage === "deposits" ? " os-desk-deposits" : deskPage === "withdrawals" ? " os-desk-withdrawals" : deskPage === "transfers" ? " os-desk-transfers" : deskPage === "copilot" ? " os-desk-copilot" : deskPage === "risk" ? " os-desk-risk" : deskPage === "notifications" ? " os-desk-notifications" : deskPage === "settings" ? " os-desk-settings" : ` page-dash-signal-${deskPage}`}` : ""}`}>
       <a
         href="#dash-main"
         className="visually-hidden-focusable os-skip"
@@ -588,19 +592,19 @@ function DashboardShellInner() {
             <button
               type="button"
               className="os-icon-btn os-notif-btn"
-              aria-label={`Notifications (${unreadAlerts.length} unacknowledged)`}
+              aria-label={`Notifications (${unreadCount} unacknowledged)`}
               aria-expanded={notifMenuOpen}
               onClick={() => setNotifMenuOpen((v) => !v)}
             >
               <Bell size={18} />
-              {unreadAlerts.length > 0 && (
-                <span className="os-notif-count">{unreadAlerts.length}</span>
+              {unreadCount > 0 && (
+                <span className="os-notif-count">{unreadCount}</span>
               )}
             </button>
             {notifMenuOpen && (
               <div className="os-pop-menu is-right" role="region" aria-label="Recent alerts">
                 <div className="os-pop-head">
-                  <span>Alerts ({unreadAlerts.length} unread)</span>
+                  <span>Alerts ({unreadCount} unread)</span>
                   <button
                     type="button"
                     className="btn btn-link btn-sm p-0 text-decoration-none"
@@ -610,22 +614,22 @@ function DashboardShellInner() {
                     <Check size={12} /> Ack all
                   </button>
                 </div>
-                {unreadAlerts.length === 0 ? (
+                {unreadCount === 0 ? (
                   <p className="small text-secondary mb-2 px-2 py-2">
-                    All cockpit alerts acknowledged.
+                    No unread notifications.
                   </p>
                 ) : (
                   unreadAlerts.slice(0, 4).map((a) => (
                     <Link
                       key={a.id}
-                      to={a.routeTo}
+                      to={`/dashboard/${a.destination}`}
                       className="os-acct-option text-decoration-none"
                       onClick={() => setNotifMenuOpen(false)}
                     >
                       <div>
                         <strong>{a.title}</strong>
                         <small>
-                          {a.accountLabel} · {a.timestamp}
+                          {a.accountLabel} · {notificationTime(a.createdAt)} EAT
                         </small>
                       </div>
                     </Link>
@@ -637,7 +641,7 @@ function DashboardShellInner() {
                     className="small fw-semibold text-decoration-none"
                     onClick={() => setNotifMenuOpen(false)}
                   >
-                    All notifications (T-15) →
+                    Open notification center →
                   </Link>
                 </div>
               </div>

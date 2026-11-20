@@ -224,8 +224,8 @@ export interface PriceAlert {
   price: number;
   note: string;
   createdEat: string;
-  status: "armed" | "triggered" | "expired";
-  channel: "In-app" | "In-app + Telegram" | "In-app + Email";
+  status: "armed" | "triggered" | "expired" | "paused" | "snoozed";
+  channel: string;
 }
 
 export const initialPriceAlerts: PriceAlert[] = [

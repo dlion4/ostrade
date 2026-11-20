@@ -314,21 +314,26 @@ let alertsStore: PriceAlert[] = structuredClone(initialPriceAlerts);
 
 export const getPriceAlerts = (): Promise<PriceAlert[]> => latency(alertsStore, 300, 480);
 
-export interface CreatePriceAlertInput { canonical: string; condition: AlertCondition; price: number; note?: string }
+export interface CreatePriceAlertInput { canonical: string; condition: AlertCondition; price: number; note?: string; channel?: string }
 
 export async function createPriceAlert(input: CreatePriceAlertInput): Promise<PriceAlert> {
+  if (!marketSymbols.some(s=>s.canonical===input.canonical)||!['above','below'].includes(input.condition)||!Number.isFinite(input.price)||input.price<=0) throw new Error('Use a known instrument and a positive price.');
   const alert: PriceAlert = {
-    id: `pa-${Date.now()}`,
+    id: `pa-${crypto.randomUUID().slice(0,10)}`,
     canonical: input.canonical,
     condition: input.condition,
     price: input.price,
     note: input.note?.trim() || "Set from Markets",
     createdEat: "Today 16:42",
     status: "armed",
-    channel: "In-app",
+    channel: input.channel ?? "In-app",
   };
   alertsStore = [alert, ...alertsStore];
   return latency(alert, 320, 560);
+}
+
+export function updatePriceAlertState(id:string, status:PriceAlert["status"]) {
+  const alert=alertsStore.find(a=>a.id===id);if(alert)alert.status=status;
 }
 
 export async function removePriceAlert(id: string): Promise<{ id: string }> {

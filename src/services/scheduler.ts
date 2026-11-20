@@ -1,3 +1,4 @@
+import { publishNotice } from "./notificationStore";
 import { marketSymbols } from "@/data/markets";
 import { isAutomationPaused, placeDashboardOrder } from "./dashboard";
 import {
@@ -233,6 +234,7 @@ export async function runScheduleNow(id: string): Promise<{ ok: boolean; message
   const outcome=await placeDashboardOrder({accountId:s.accountId,symbol:s.symbol,size,side:s.side,entry,sl:level(s.sl,true),tp:level(s.tp,false),origin:"Scheduled",sourceRef:s.ref,sourceLabel:s.name});
   const index=schedulesStore.findIndex(row=>row.id===id);
   if(index!==-1)schedulesStore[index]={...schedulesStore[index],lastResult:`${outcome.title} · ${outcome.ref}`,lastResultTone:outcome.mode==="simulated"?"success":outcome.mode==="blocked"?"error":"neutral"};
+  if(outcome.mode!=="ready")publishNotice({event:outcome.mode==='simulated'?'schedule.fired':'schedule.failed',title:outcome.mode==='simulated'?`Schedule ran · ${s.name}`:`Scheduled run blocked · ${s.name}`,body:outcome.detail,accountLabel:s.accountLabel,ref:s.ref});
   return {ok:outcome.mode!=="blocked",message:outcome.detail};
 }
 
