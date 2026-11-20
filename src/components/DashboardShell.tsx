@@ -144,7 +144,7 @@ export const DASH_NAV_GROUPS: { group: string; items: DashNavItem[] }[] = [
 /* ── Kill-Switch Confirmation Modal ──────────────────────── */
 
 function KillSwitchModal({ onClose }: { onClose: () => void }) {
-  const { killSwitch, setKillSwitch } = useDashboardContext();
+  const { killSwitch } = useDashboardContext();
   const [choice, setChoice] = useState<KillSwitchMode>(
     killSwitch === "armed" ? "paused" : "armed"
   );
@@ -160,9 +160,8 @@ function KillSwitchModal({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   const mut = useMutation({
-    mutationFn: applyKillSwitch,
+    mutationFn: (mode:KillSwitchMode) => applyKillSwitch(mode),
     onSuccess: (res) => {
-      setKillSwitch(choice);
       qc.invalidateQueries({ queryKey: ["signal-rules"] });
       qc.invalidateQueries({ queryKey: ["schedules"] });
       qc.invalidateQueries({ queryKey: ["positions"] });
@@ -336,14 +335,15 @@ function DashboardShellInner() {
   const deskPage = useRouterState({
     select: (s) => {
       const path = s.location.pathname.replace(/\/$/, "");
-      return path === "/dashboard/signals" ? "signals" : path === "/dashboard/automation" ? "automation" : null;
+      return path === "/dashboard/signals" ? "signals" : path === "/dashboard/automation" ? "automation" : path === "/dashboard/records" ? "records" : path === "/dashboard/accounts" ? "accounts" : path === "/dashboard/deposits" ? "deposits" : path === "/dashboard/withdrawals" ? "withdrawals" : path === "/dashboard/transfers" ? "transfers" : path === "/dashboard/copilot" ? "copilot" : path === "/dashboard/risk" ? "risk" : null;
     },
   });
   const desk = deskPage !== null;
-  const deskTitle = deskPage === "automation" ? "Automation engine" : "Signal Desk";
+  const deskTitle = deskPage === "automation" ? "Automation engine" : deskPage === "records" ? "Records & Analytics" : deskPage === "accounts" ? "Accounts & Broker Hub" : deskPage === "deposits" ? "Deposits" : deskPage === "withdrawals" ? "Withdrawals" : deskPage === "transfers" ? "Transfers & Ledger" : deskPage === "copilot" ? "AI Co-Pilot" : deskPage === "risk" ? "Risk & Guardrails" : "Signal Desk";
   const {
     activeAccountId,
     setActiveAccountId,
+    setFanoutAccountIds,
     globalMode,
     setGlobalMode,
     killSwitch,
@@ -411,7 +411,7 @@ function DashboardShellInner() {
   const unreadAlerts = (alertsQ.data ?? []).filter((a) => !a.acknowledged);
 
   return (
-    <div className={`os-dash-shell${desk ? ` os-desk-shell page-dash-signal-${deskPage}` : ""}`}>
+    <div className={`os-dash-shell${desk ? ` os-desk-shell${deskPage === "records" ? " os-desk-records" : deskPage === "accounts" ? " os-desk-accounts" : deskPage === "deposits" ? " os-desk-deposits" : deskPage === "withdrawals" ? " os-desk-withdrawals" : deskPage === "transfers" ? " os-desk-transfers" : deskPage === "copilot" ? " os-desk-copilot" : deskPage === "risk" ? " os-desk-risk" : ` page-dash-signal-${deskPage}`}` : ""}`}>
       <a
         href="#dash-main"
         className="visually-hidden-focusable os-skip"
@@ -482,12 +482,13 @@ function DashboardShellInner() {
                 className={`os-acct-option ${activeAccountId === "all" ? "is-active" : ""}`}
                 onClick={() => {
                   setActiveAccountId("all");
+                  setFanoutAccountIds([]);
                   setAcctMenuOpen(false);
                   toast("Switched context: All Connected Accounts");
                 }}
               >
                 <div>
-                  <strong>All Connected Accounts ({connectedAccounts.length})</strong>
+                  <strong>{deskPage === "accounts" ? "All Account Workspaces" : "All Connected Accounts"} ({connectedAccounts.length})</strong>
                   <small>Consolidated portfolio &amp; positions</small>
                 </div>
                 <span className="os-mono fw-bold" style={{ fontSize: "0.84rem" }}>
@@ -501,6 +502,7 @@ function DashboardShellInner() {
                   className={`os-acct-option ${activeAccountId === acc.id ? "is-active" : ""}`}
                   onClick={() => {
                     setActiveAccountId(acc.id);
+                    setFanoutAccountIds([]);
                     setAcctMenuOpen(false);
                     toast(`Active account: ${acc.label} (${acc.currency} ${acc.equity.toFixed(2)})`);
                   }}
@@ -561,7 +563,12 @@ function DashboardShellInner() {
 
         {/* Right Controls */}
         <div className="os-dash-top-right">
-          {desk ? <button className="os-desk-mode" type="button" title="Switch workspace mode" onClick={() => { const next=globalMode === "paper" ? "live" : "paper"; setGlobalMode(next); toast(next === "live" ? "Live preview: broker execution stays offline" : "Paper mode: local fills enabled"); }}><FlaskConical size={13} />{globalMode === "paper" ? "Paper mode" : "Live preview"}</button> : <a
+          {desk ? <button className="os-desk-mode" type="button" title="Switch workspace mode" onClick={() => {
+              if (deskPage === "accounts") { document.getElementById("hub-context")?.scrollIntoView(); document.getElementById("hub-routing-mode")?.focus({ preventScroll: true }); return; }
+              const next = globalMode === "paper" ? "live" : "paper";
+              setGlobalMode(next);
+              toast(next === "live" ? "Live preview: broker execution stays offline" : "Paper mode: local fills enabled");
+            }}><FlaskConical size={13} />{globalMode === "paper" ? "Paper mode" : "Live preview"}</button> : <a
             href="#market-clocks"
             className="os-clock-chip"
             onClick={(e) => {

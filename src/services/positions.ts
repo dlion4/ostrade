@@ -1,3 +1,4 @@
+import { addJournalNote, eatDay, getPositionJournal } from "./records";
 // T-7 Positions & Orders service layer
 // TanStack Query consumes ONLY these functions — pages never import src/data directly.
 import {
@@ -279,9 +280,9 @@ export async function getPositionDetailMeta(
   positionId: string,
   pos?: OpenPosition
 ): Promise<PositionDetailMeta> {
-  if (positionMetasStore[positionId]) {
-    return latency(positionMetasStore[positionId], 280, 450);
-  }
+  const journal = await getPositionJournal(positionId);
+  const withJournal = (meta: PositionDetailMeta) => ({ ...meta, notes: [...meta.notes, ...journal.map((n) => n.text)], tags: [...new Set([...meta.tags, ...journal.flatMap((n) => n.tags)])] });
+  if (positionMetasStore[positionId]) return withJournal(positionMetasStore[positionId]);
 
   // Generate believable default metadata if not explicitly in sample
   const defaultMeta: PositionDetailMeta = {
@@ -309,7 +310,7 @@ export async function getPositionDetailMeta(
   };
 
   positionMetasStore[positionId] = defaultMeta;
-  return latency(defaultMeta, 280, 450);
+  return withJournal(defaultMeta);
 }
 
 export async function addPositionJournalNote(
@@ -317,9 +318,7 @@ export async function addPositionJournalNote(
   note: string,
   tags: string[]
 ): Promise<{ ok: boolean; message: string }> {
-  const meta = positionMetasStore[positionId] ?? (await getPositionDetailMeta(positionId));
-  if (note.trim()) meta.notes.push(note.trim());
-  if (tags.length) meta.tags = Array.from(new Set([...meta.tags, ...tags]));
+  if (note.trim()) await addJournalNote({ positionId, text: note, tags, date: eatDay(new Date()) });
 
   recordDeskEvent({
     accountId: "acc-paper-main",

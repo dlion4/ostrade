@@ -195,6 +195,7 @@ export function DashPositionsPage() {
   const refreshAll = () => {
     qc.invalidateQueries({ queryKey: ["consolidated-positions"] });
     qc.invalidateQueries({ queryKey: ["positions"] });
+    qc.invalidateQueries({ queryKey: ["records"] });
     qc.invalidateQueries({ queryKey: ["pending-orders"] });
     qc.invalidateQueries({ queryKey: ["deriv-open-contracts"] });
     qc.invalidateQueries({ queryKey: ["margin-exposure-data"] });
@@ -250,6 +251,7 @@ export function DashPositionsPage() {
     onSuccess: (res) => {
       toast(res.message);
       qc.invalidateQueries({ queryKey: ["position-detail-meta", drawerPos?.id] });
+      qc.invalidateQueries({ queryKey: ["trade-journal"] });
       setNewNote("");
     },
   });

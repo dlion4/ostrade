@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /** Counts up once when scrolled into view. Snaps under prefers-reduced-motion. */
-export function CountUp({ value, duration = 1200 }: { value: number; duration?: number }) {
+export function CountUp({ value, duration = 1200, format }: { value: number; duration?: number; format?: (value: number) => string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [n, setN] = useState(0);
 
@@ -37,7 +37,7 @@ export function CountUp({ value, duration = 1200 }: { value: number; duration?: 
 
   return (
     <span ref={ref} className="os-mono">
-      {n}
+      {format ? format(n) : n}
     </span>
   );
 }

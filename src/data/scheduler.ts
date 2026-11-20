@@ -29,6 +29,7 @@ export interface SchedulerSchedule {
   createdAt: string;
   expiry: string;
   tags: string[];
+  copilot?: { source: "AI"; templateId?: string; intent: string; maxOpen?: number };
   maxFailures: number;
   consecutiveFailures: number;
 }

@@ -1,3 +1,4 @@
+import { useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
@@ -42,8 +43,9 @@ import {
 import css from "@/styles/pages/dash-signal-desk.css?inline";
 
 export function DashSignalDeskPage() {
+  const { recordSource } = useSearch({ from: "/dashboard/signals" });
   usePageStyle("dash-signal-desk", css);
-  const { activeAccountId, killSwitch, globalMode } = useDashboardContext(),
+  const { activeAccountId, fanoutAccountIds, killSwitch, globalMode } = useDashboardContext(),
     qc = useQueryClient();
   const setup = useQuery({ queryKey: ["desk-setup"], queryFn: getDeskSetup });
   const inbox = useQuery({
@@ -78,6 +80,9 @@ export function DashSignalDeskPage() {
     [detail, setDetail] = useState<string | null>(null),
     [review, setReview] = useState<DeskSignal[] | null>(null),
     [load, setLoad] = useState<ComposerLoad | null>(null);
+  useEffect(() => {
+    if (recordSource && setup.data) document.getElementById("os-signal-inbox")?.scrollIntoView();
+  }, [recordSource, setup.data]);
   const [options, setOptions] = useState<RouteOptions>({
     accounts: [activeAccountId === "all" ? "acc-paper-main" : activeAccountId],
     sizing: "signal",
@@ -96,15 +101,11 @@ export function DashSignalDeskPage() {
   useEffect(() => {
     setOptions((prev) => ({
       ...prev,
-      accounts: [
-        activeAccountId === "all"
-          ? globalMode === "paper"
-            ? "acc-paper-main"
-            : "acc-exness-trial"
-          : activeAccountId,
+      accounts: fanoutAccountIds.length ? fanoutAccountIds : [
+        activeAccountId === "all" ? globalMode === "paper" ? "acc-paper-main" : "acc-exness-trial" : activeAccountId,
       ],
     }));
-  }, [activeAccountId, globalMode]);
+  }, [activeAccountId, fanoutAccountIds, globalMode]);
   const refresh = useCallback(() => {
     for (const key of [
       "signals",
@@ -271,6 +272,8 @@ export function DashSignalDeskPage() {
           </div>
           <SignalInbox
             rows={rows}
+            key={recordSource ?? "all"}
+            initialSearch={recordSource}
             accountNames={Object.fromEntries(
               accounts.map((a) => [a.id, a.label]),
             )}

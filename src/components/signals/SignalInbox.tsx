@@ -41,6 +41,7 @@ export function SignalInbox({
   onReview,
   snapshot,
   accountNames,
+  initialSearch = "",
 }: {
   rows: DeskSignal[];
   selection: RowSelectionState;
@@ -49,9 +50,10 @@ export function SignalInbox({
   onReview: (r: DeskSignal[]) => void;
   snapshot: number;
   accountNames: Record<string, string>;
+  initialSearch?: string;
 }) {
   const [tab, setTab] = useState("All signals"),
-    [search, setSearch] = useState(""),
+    [search, setSearch] = useState(initialSearch),
     [filters, openFilters] = useState(false),
     [expandedColumns, setExpandedColumns] = useState(false),
     [source, setSource] = useState("All"),

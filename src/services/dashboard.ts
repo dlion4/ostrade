@@ -1,3 +1,5 @@
+import { mappedBrokerSymbol } from "./symbolMappings";
+import { marketSymbols } from "@/data/markets";
 // Dashboard service layer (T-1..T-16).
 // TanStack Query consumes ONLY these functions — pages never import src/data directly.
 // Paper-account actions simulate locally end-to-end; broker-API actions resolve to
@@ -39,6 +41,9 @@ import {
   type TradingAccount,
 } from "@/data/dashboard";
 import { latency } from "./_latency";
+import { bookPaperClosure, readTradeRiskHistory } from "./records";
+import { accountPauses, addRiskAudit, breachedLossPolicy, evaluateTicket, lockdown, markEngagement, noteAttempt, noteFill, rulePauses, safeRiskText } from "./riskEngine";
+import type { CarryIntent, RiskTicket } from "@/data/risk";
 
 export { DASH_MAX_SCHEDULES };
 export type {
@@ -66,6 +71,13 @@ export type {
 
 // Mutable in-memory stores for realistic local session state across queries
 let accountsStore: TradingAccount[] = structuredClone(tradingAccounts);
+const PAPER_ACCOUNTS_KEY = "os-local-paper-accounts";
+try {
+  const saved = JSON.parse(localStorage.getItem(PAPER_ACCOUNTS_KEY) ?? "[]") as TradingAccount[];
+  if (Array.isArray(saved)) accountsStore.push(...saved.filter((a) => a.broker === "paper" && a.id?.startsWith("acc-paper-local-")));
+} catch { /* browser storage optional */ }
+const openingSimulatorBalances = new Map(accountsStore.filter(a => !tradingAccounts.some(seed=>seed.id===a.id)).map(a => [a.id,a.balance]));
+export const getPaperOpeningBalance = (id:string) => openingSimulatorBalances.get(id);
 let positionsStore: OpenPosition[] = structuredClone(initialOpenPositions);
 let schedulesStore: DashboardSchedule[] = structuredClone(initialSchedules);
 let usedSlotsCount = 18; // matches blueprint "18 / 50 slots"
@@ -75,6 +87,14 @@ let alertsStore: DashboardAlert[] = structuredClone(initialAlerts);
 let recordsStore: JournalRecord[] = structuredClone(initialRecords);
 let eventsStore: EconomicEvent[] = structuredClone(initialEconomicEvents);
 let refCounter = 148;
+let killSwitchStore: KillSwitchMode = "armed";
+const killListeners=new Set<()=>void>();
+export const getLocalKillSwitch = () => killSwitchStore;
+export function subscribeKillSwitch(listener:()=>void){killListeners.add(listener);return ()=>{killListeners.delete(listener);};}
+export function isAutomationPaused(accountId?:string, ruleId?:string) {
+  return killSwitchStore!=="armed" || lockdown || (!!accountId&&accountPauses.has(accountId)) || (!!ruleId&&rulePauses.has(ruleId));
+}
+export const evaluateWorkspaceOrder = (ticket:RiskTicket, ruleRef?:string) => evaluateTicket(ticket,{accounts:accountsStore,positions:positionsStore,records:readTradeRiskHistory(),state:killSwitchStore,ruleRef});
 
 function nextOrderRef(): string {
   refCounter += 1;
@@ -89,6 +109,63 @@ function eatTimestamp(): string {
 
 export const getAccounts = (): Promise<TradingAccount[]> =>
   latency(accountsStore, 300, 520);
+
+export async function createPaperAccount(input: { label: string; startingBalance: number }) {
+  const label = input.label.trim();
+  if (label.length < 2 || label.length > 40 || accountsStore.some((a) => a.label.toLowerCase() === label.toLowerCase())) throw new Error("Choose a unique account label between 2 and 40 characters.");
+  if (!Number.isFinite(input.startingBalance) || input.startingBalance < 100 || input.startingBalance > 1_000_000) throw new Error("Starting balance must be between $100 and $1,000,000.");
+  const balance = Math.round(input.startingBalance * 100) / 100;
+  const suffix = globalThis.crypto.randomUUID().slice(0, 8);
+  const account: TradingAccount = { ...tradingAccounts[0], id: `acc-paper-local-${suffix}`, label, accountNumber: `OSP-${suffix.toUpperCase()}`, balance, equity: balance, realizedToday: 0, floatingPnl: 0, marginUsedPct: 0, todayChangePct: 0, sparkline: Array(8).fill(balance) };
+  accountsStore.push(account);
+  openingSimulatorBalances.set(account.id, balance);
+  try {
+    const saved = JSON.parse(localStorage.getItem(PAPER_ACCOUNTS_KEY) ?? "[]");
+    localStorage.setItem(PAPER_ACCOUNTS_KEY, JSON.stringify([...saved, account]));
+  } catch { /* session fallback */ }
+  return latency(account);
+}
+
+/** Session-only funding, kept separate from realized trading P&L. */
+export function applySimulatedFunding(accountId: string, amount: number) {
+  const account = accountsStore.find((a) => a.id === accountId && a.broker === "paper" && a.environment === "paper");
+  if (!account || !Number.isFinite(amount) || amount <= 0 || amount > 100000) throw new Error("Only valid local Paper top-ups can update a balance.");
+  account.balance = Math.round((account.balance + amount) * 100) / 100;
+  account.equity = Math.round((account.equity + amount) * 100) / 100;
+  return account.balance;
+}
+
+export const WITHDRAWAL_MARGIN_GUARD = 0.65;
+export function calculateWithdrawable(account: TradingAccount) {
+  const margin = Math.max(0, account.equity * account.marginUsedPct / 100);
+  const free = Math.max(0, Math.min(account.balance, account.equity - Math.max(1, margin / WITHDRAWAL_MARGIN_GUARD)));
+  return { margin, available: Math.floor(free * 100 + 1e-7) / 100 };
+}
+
+/** Commit only a locally simulated debit; re-check live in-memory equity and margin. */
+export function applySimulatedWithdrawal(accountId: string, amount: number) {
+  const account = accountsStore.find((a) => a.id === accountId && a.broker === "paper" && a.environment === "paper");
+  if (!account || !Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) / 100 !== amount) throw new Error("Only a valid Paper withdrawal can debit the simulator.");
+  const { available, margin } = calculateWithdrawable(account);
+  if (amount > available) throw new Error("The current Paper balance or margin guard no longer permits this amount.");
+  account.balance = Math.round((account.balance - amount) * 100) / 100;
+  account.equity = Math.round((account.equity - amount) * 100) / 100;
+  account.marginUsedPct = margin / account.equity * 100;
+  return account.balance;
+}
+
+export function applyPaperTransfer(fromId: string, toId: string, amount: number) {
+  const from = accountsStore.find(a => a.id === fromId && a.broker === "paper" && a.environment === "paper");
+  const to = accountsStore.find(a => a.id === toId && a.broker === "paper" && a.environment === "paper");
+  if (!from || !to || from === to || !Number.isFinite(amount) || amount < 1 || Math.round(amount * 100) / 100 !== amount) throw new Error("Choose two distinct Paper accounts and a valid amount.");
+  if (amount > calculateWithdrawable(from).available) throw new Error("The current Paper balance or margin guard no longer permits this transfer.");
+  const destinationMargin = to.equity * to.marginUsedPct / 100;
+  const sourceBalance = applySimulatedWithdrawal(fromId, amount);
+  to.balance = Math.round((to.balance + amount) * 100) / 100;
+  to.equity = Math.round((to.equity + amount) * 100) / 100;
+  to.marginUsedPct = destinationMargin / to.equity * 100;
+  return { sourceBalance, destinationBalance: to.balance };
+}
 
 export const getAdapters = (): Promise<AdapterHealth[]> =>
   latency(adapterSnapshots, 300, 480);
@@ -120,6 +197,7 @@ export interface PositionFilters {
   search?: string;
 }
 
+export const readOpenRiskPositions = () => positionsStore.slice();
 export const getPositions = (
   filters: PositionFilters = {}
 ): Promise<OpenPosition[]> => {
@@ -153,14 +231,14 @@ export const getSchedulesSummary = (): Promise<{
     {
       usedSlots: usedSlotsCount,
       maxSlots: DASH_MAX_SCHEDULES,
-      items: schedulesStore,
+      items: schedulesStore.map(s=>isAutomationPaused(s.accountId)?{...s,active:false}:s),
     },
     300,
     500
   );
 
 export const getSignalRules = (): Promise<SignalRule[]> =>
-  latency(rulesStore, 300, 500);
+  latency(rulesStore.map(r=>isAutomationPaused(r.accountId,r.id)?{...r,enabled:false}:r), 300, 500);
 
 export const getCopilotProposals = (): Promise<CopilotProposal[]> =>
   latency(copilotStore, 300, 520);
@@ -197,8 +275,13 @@ export interface PlaceDashboardOrderInput {
   entry: number;
   sl: number;
   tp: number;
-  origin?: "Signal" | "Manual";
+  origin?: "Signal" | "Manual" | "Co-Pilot" | "Scheduled";
+  carry?: CarryIntent;
+  overrideReason?: string;
+  ruleRef?: string;
   channelNote?: string;
+  sourceLabel?: string;
+  sourceRef?: string;
   sizeUnit?: OpenPosition["sizeUnit"];
 }
 
@@ -209,15 +292,37 @@ export interface DashboardMutationOutcome {
   detail: string;
 }
 
-export async function placeDashboardOrder(
-  input: PlaceDashboardOrderInput
-): Promise<DashboardMutationOutcome> {
-  const acc =
-    accountsStore.find((a) => a.id === input.accountId) ?? accountsStore[0];
+function tripDailyCircuitIfNeeded(){
+  if(killSwitchStore==="armed"&&breachedLossPolicy(accountsStore))void applyKillSwitch("paused","Daily loss circuit breaker crossed the configured equity limit.");
+}
+
+export function admitDashboardOrder(input:PlaceDashboardOrderInput, staging=false) {
+  const origin=input.origin??"Signal";
+  const ticket:RiskTicket={...input,symbol:input.symbol.toUpperCase(),channel:origin==="Co-Pilot"?"AI":origin==="Scheduled"?"Schedule":origin,subject:input.sourceRef?`${origin} · ${input.sourceRef} · ${input.symbol}`:undefined};
+  const evaluated=evaluateWorkspaceOrder(ticket,input.ruleRef);
+  const reason=safeRiskText(input.overrideReason??"");
+  const hasHardBlock=evaluated.checks.some(c=>c.decision==="BLOCK"&&!c.overridable);
+  const allowOverride=reason.length>=12&&ticket.channel==="Manual"&&!hasHardBlock;
+  const checks=evaluated.checks.map(c=>allowOverride&&c.decision==="BLOCK"&&c.overridable?{...c,decision:"OVERRIDE" as const}:c);
+  noteAttempt(ticket);
+  if(evaluated.breaker)tripDailyCircuitIfNeeded();
+  const outcome=checks.find(c=>c.decision==="BLOCK");
+  const account=accountsStore.find(a=>a.id===input.accountId);
+  const ref=!outcome&&!staging&&account?.broker==="paper"&&account.environment==="paper"?nextOrderRef():undefined;
+  const overall=addRiskAudit({category:"Evaluation",mode:"Live local",rule:"Pre-trade admission",subject:evaluated.subject,scope:evaluated.scope,decision:outcome?"BLOCK":checks.some(c=>c.decision==="OVERRIDE")?"OVERRIDE":"PASS",detail:outcome?`${outcome.label}: ${outcome.detail}`:staging?"Staging checks passed; rechecked before fill.":"Order checks passed.",ref:ref??input.sourceRef,reason:checks.some(c=>c.decision==="OVERRIDE")?reason:undefined});
+  for(const c of checks) addRiskAudit({category:c.shield?"Shield":"Evaluation",mode:"Live local",rule:c.label,subject:evaluated.subject,scope:evaluated.scope,decision:c.decision,detail:c.detail,reason:c.decision==="OVERRIDE"?reason:undefined,ref:ref??input.sourceRef??overall.id});
+  return {ticket,ref,outcome,auditId:overall.id};
+}
+
+export async function placeDashboardOrder(input: PlaceDashboardOrderInput): Promise<DashboardMutationOutcome> {
+  const checked=admitDashboardOrder(input);
+  const acc=accountsStore.find(a=>a.id===input.accountId);
+  if(checked.outcome||!acc) return latency({mode:"blocked",ref:checked.auditId,title:checked.outcome?.label??"Account unavailable",detail:checked.outcome?.detail??"Select an existing account before submitting an order."});
 
   // Paper accounts simulate locally end-to-end
-  if (acc.environment === "paper") {
-    const ref = nextOrderRef();
+  if (checked.ref) {
+    const ref = checked.ref;
+    noteFill(checked.ticket);
     const newPos: OpenPosition = {
       id: `pos-${ref}`,
       ref,
@@ -227,17 +332,21 @@ export async function placeDashboardOrder(
       brokerName: acc.brokerName,
       environment: acc.environment,
       symbol: input.symbol.toUpperCase(),
-      brokerSymbol: input.symbol.toUpperCase(),
+      brokerSymbol: mappedBrokerSymbol(marketSymbols.find((s) => s.canonical === input.symbol.toUpperCase()), acc) ?? input.symbol.toUpperCase(),
       side: input.side,
       size: input.size,
       sizeUnit: input.sizeUnit ?? (acc.broker === "alpaca" ? "shares" : "lots"),
       entry: input.entry,
       current: input.entry,
       sl: input.sl,
+      initialSl: input.sl,
       tp: input.tp,
       pnl: 0,
       pnlPct: 0,
       source: input.origin ?? "Signal",
+      sourceLabel: input.sourceLabel,
+      sourceRef: input.sourceRef,
+      openedTimestamp: new Date().toISOString(),
       openedAt: `${eatTimestamp()} EAT`,
     };
     positionsStore = [newPos, ...positionsStore];
@@ -312,7 +421,8 @@ export async function closePosition(
     });
   }
 
-  if (pos.environment === "paper") {
+  if (pos.broker === "paper" && pos.environment === "paper") {
+    bookPaperClosure(pos);
     positionsStore = positionsStore.filter((p) => p.id !== positionId);
     const acc = accountsStore.find((a) => a.id === pos.accountId);
     if (acc) {
@@ -322,11 +432,12 @@ export async function closePosition(
       acc.equity = Math.round((acc.balance + acc.floatingPnl) * 100) / 100;
       acc.marginUsedPct = Math.max(0, Math.round((acc.marginUsedPct - 2.4) * 10) / 10);
     }
+    tripDailyCircuitIfNeeded();
     const sign = pos.pnl >= 0 ? "+" : "−";
     const formatted = `${sign}$${Math.abs(pos.pnl).toFixed(2)}`;
     recordsStore = [
       {
-        id: `rec-${Date.now()}`,
+        id: `rec-${pos.ref}-closed`,
         ref: pos.ref,
         timeEat: eatTimestamp(),
         accountId: pos.accountId,
@@ -382,7 +493,7 @@ export async function updatePositionStops(
       detail: "Per capability matrix (§3.3), Deriv contracts do not patch MT-style SL/TP in place.",
     });
   }
-  if (pos.environment === "paper") {
+  if (pos.broker === "paper" && pos.environment === "paper") {
     pos.sl = sl;
     pos.tp = tp;
     recordsStore = [
@@ -428,7 +539,7 @@ export async function partialClosePosition(
   if (volumeToClose >= pos.size) {
     return closePosition(positionId);
   }
-  if (pos.environment === "paper") {
+  if (pos.broker === "paper" && pos.environment === "paper") {
     const ratio = Math.min(1, Math.max(0.01, volumeToClose / pos.size));
     const realizedPnl = Math.round(pos.pnl * ratio * 100) / 100;
     const remainingSize = Math.max(0.01, Math.round((pos.size - volumeToClose) * 100) / 100);
@@ -448,6 +559,8 @@ export async function partialClosePosition(
     const sign = realizedPnl >= 0 ? "+" : "−";
     const formatted = `${sign}$${Math.abs(realizedPnl).toFixed(2)}`;
     const ref = nextOrderRef();
+    bookPaperClosure(pos, { ref, size: volumeToClose, pnl: realizedPnl });
+    tripDailyCircuitIfNeeded();
     recordsStore = [
       {
         id: `rec-${Date.now()}`,
@@ -488,58 +601,18 @@ export async function reversePosition(
   if (!pos) {
     return latency({ mode: "blocked", ref: "—", title: "Position not found", detail: "Position does not exist." });
   }
-  if (pos.environment === "paper") {
-    // 1. Close current position
-    await closePosition(positionId);
-    // 2. Open opposite position
-    const oppositeSide = pos.side === "BUY" ? "SELL" : "BUY";
-    const ref = nextOrderRef();
-    const newPos: OpenPosition = {
-      id: `pos-${Date.now()}`,
-      ref,
-      accountId: pos.accountId,
-      accountLabel: pos.accountLabel,
-      broker: pos.broker,
-      brokerName: pos.brokerName,
-      environment: pos.environment,
-      symbol: pos.symbol,
-      brokerSymbol: pos.brokerSymbol,
-      side: oppositeSide,
-      size: pos.size,
-      sizeUnit: pos.sizeUnit,
-      entry: pos.current,
-      current: pos.current,
-      sl: 0,
-      tp: 0,
-      pnl: 0,
-      pnlPct: 0,
-      source: "Manual",
-      openedAt: `${eatTimestamp()} EAT`,
-    };
-    positionsStore = [newPos, ...positionsStore];
-    recordsStore = [
-      {
-        id: `rec-${Date.now()}`,
-        ref,
-        timeEat: eatTimestamp(),
-        accountId: pos.accountId,
-        accountLabel: pos.accountLabel,
-        broker: pos.broker,
-        origin: "Manual",
-        symbol: pos.symbol,
-        side: oppositeSide,
-        status: "Filled",
-        summary: `Reversed position: ${oppositeSide} ${pos.size} ${pos.sizeUnit} @ ${pos.current} · ${ref} (SIMULATED)`,
-        impact: "$0.00 open",
-      },
-      ...recordsStore,
-    ];
-    return latency({
-      mode: "simulated",
-      ref,
-      title: `Position reversed · ${ref}`,
-      detail: `Closed ${pos.side} and opened ${oppositeSide} ${pos.size} ${pos.sizeUnit} ${pos.symbol} @ ${pos.current} on ${pos.accountLabel}.`,
-    }, 420, 700);
+  if (pos.broker === "paper" && pos.environment === "paper") {
+    const stopDistance=Math.abs(pos.entry-pos.sl), targetDistance=Math.abs(pos.tp-pos.entry);
+    const input:PlaceDashboardOrderInput={accountId:pos.accountId,symbol:pos.symbol,side:pos.side==="BUY"?"SELL":"BUY",size:pos.size,entry:pos.current,sl:pos.sl>0?(pos.side==="BUY"?pos.current+stopDistance:pos.current-stopDistance):0,tp:pos.tp>0?(pos.side==="BUY"?pos.current-targetDistance:pos.current+targetDistance):0,origin:"Manual",sizeUnit:pos.sizeUnit,sourceLabel:"Position reversal"};
+    const result=evaluateWorkspaceOrder({...input,channel:"Manual"});
+    if(result.checks.some(c=>c.decision==="BLOCK")) {
+      const blocked=admitDashboardOrder(input,true);
+      return latency({mode:"blocked",ref:blocked.auditId,title:"Reversal blocked",detail:blocked.outcome?.detail??"New equity or a valid stop is required."});
+    }
+    const closed=await closePosition(positionId);
+    if(closed.mode!=="simulated")return closed;
+    const reversed=await placeDashboardOrder(input);
+    return {...reversed,detail:reversed.mode==="simulated"?reversed.detail:`Original closed; reversal not opened. ${reversed.detail}`};
   }
 
   return latency({
@@ -571,7 +644,7 @@ export async function toggleScheduleItem(
   scheduleId: string
 ): Promise<{ id: string; active: boolean }> {
   const item = schedulesStore.find((s) => s.id === scheduleId);
-  if (item) item.active = !item.active;
+  if (item && (item.active || !isAutomationPaused(item.accountId))) item.active = !item.active;
   return latency({ id: scheduleId, active: item?.active ?? false }, 260, 450);
 }
 
@@ -579,7 +652,7 @@ export async function toggleSignalRule(
   ruleId: string
 ): Promise<{ id: string; enabled: boolean }> {
   const rule = rulesStore.find((r) => r.id === ruleId);
-  if (rule) rule.enabled = !rule.enabled;
+  if (rule && !rule.copilot && (rule.enabled || !isAutomationPaused(rule.accountId,rule.id))) rule.enabled = !rule.enabled;
   return latency({ id: ruleId, enabled: rule?.enabled ?? false }, 260, 450);
 }
 
@@ -595,8 +668,11 @@ export async function saveSignalRule(input: SignalRuleUpsert): Promise<SignalRul
     throw new Error(`The ${MAX_SIGNAL_RULES}-rule limit has been reached. Delete or archive a rule first.`);
   }
   const current = existingIndex >= 0 ? rulesStore[existingIndex] : undefined;
+  if (input.enabled && isAutomationPaused(input.accountId,input.id)) throw new Error("Automation is paused for this scope.");
+  if ((current?.copilot||input.copilot) && input.enabled) throw new Error("AI preview rules remain disabled. No automation was activated.");
   const rule: SignalRule = {
     ...input,
+    copilot: current?.copilot ?? input.copilot,
     id: current?.id ?? `rul-${crypto.randomUUID().slice(0, 8)}`,
     firedToday: current?.firedToday ?? 0,
     lastDecision: current?.lastDecision ?? "SKIPPED",
@@ -611,6 +687,8 @@ export async function saveSignalRule(input: SignalRuleUpsert): Promise<SignalRul
 export async function setSignalRuleEnabled(id: string, enabled: boolean): Promise<SignalRule> {
   const rule = rulesStore.find((r) => r.id === id);
   if (!rule) throw new Error("Rule not found.");
+  if (enabled && isAutomationPaused(rule.accountId,id)) throw new Error("Automation is paused for this scope.");
+  if (enabled && rule.copilot) throw new Error("AI preview rules remain disabled. No automation was activated.");
   rule.enabled = enabled;
   rule.automation = rule.automation ? { ...rule.automation, status: enabled ? "active" : "paused", updatedAt: "Today 16:42" } : rule.automation;
   return latency(rule, 280, 460);
@@ -829,87 +907,42 @@ export async function createSchedule(
   }, 360, 620);
 }
 
+let priorRules=new Set<string>(), priorSchedules=new Set<string>();
 export async function applyKillSwitch(
-  nextState: KillSwitchMode
+  nextState: KillSwitchMode, reason = "Operator used the workspace emergency control.", options?: {code?:string; quiet?:boolean; flatten?:boolean}
 ): Promise<DashboardMutationOutcome> {
-  if (nextState === "paused") {
-    rulesStore = rulesStore.map((r) => ({ ...r, enabled: false }));
-    schedulesStore = schedulesStore.map((s) => ({ ...s, active: false }));
-    const ref = nextOrderRef();
-    recordsStore = [
-      {
-        id: `rec-${Date.now()}`,
-        ref,
-        timeEat: eatTimestamp(),
-        accountId: "acc-paper-main",
-        accountLabel: "Workspace",
-        broker: "paper",
-        origin: "Guard",
-        symbol: "ALL",
-        side: "—",
-        status: "Staged",
-        summary: "Kill-switch engaged: all rules & schedules paused",
-        impact: "PAUSED",
-      },
-      ...recordsStore,
-    ];
-    return latency({
-      mode: "simulated",
-      ref,
-      title: "Kill-switch engaged — automation paused",
-      detail: "All signal rules and scheduled slots are paused across the workspace.",
-    }, 350, 580);
+  if(nextState==="armed"&&breachedLossPolicy(accountsStore))return latency({mode:"blocked",ref:"—",title:"Daily loss circuit breaker is still active",detail:"The daily loss policy cannot be overridden."});
+  if(killSwitchStore==="flattened"&&nextState==="paused")return latency({mode:"blocked",ref:"—",title:"Close-all halt is active",detail:"Use protected re-arm rather than weakening this halt."});
+  if(lockdown&&nextState==="armed"&&options?.code!=="123456")return latency({mode:"blocked",ref:"—",title:"Lockdown requires 2FA",detail:"Re-arm with the example authenticator code on Risk & Guardrails."});
+  if(lockdown&&nextState!=="armed"&&!options?.quiet)return latency({mode:"blocked",ref:"—",title:"Workspace locked down",detail:"Use the protected controls on Risk & Guardrails."});
+  const before=killSwitchStore;
+  if(before==="armed"&&nextState!=="armed"){
+    priorRules=new Set(rulesStore.filter(r=>r.enabled).map(r=>r.id));
+    priorSchedules=new Set(schedulesStore.filter(r=>r.active).map(r=>r.id));
   }
-
-  if (nextState === "flattened") {
-    rulesStore = rulesStore.map((r) => ({ ...r, enabled: false }));
-    schedulesStore = schedulesStore.map((s) => ({ ...s, active: false }));
-    const paperOpen = positionsStore.filter((p) => p.environment === "paper");
-    const nonPaperCount = positionsStore.filter((p) => p.environment !== "paper").length;
-    paperOpen.forEach((pos) => {
-      const acc = accountsStore.find((a) => a.id === pos.accountId);
-      if (acc) {
-        acc.balance = Math.round((acc.balance + pos.pnl) * 100) / 100;
-        acc.realizedToday = Math.round((acc.realizedToday + pos.pnl) * 100) / 100;
-        acc.floatingPnl = 0;
-        acc.equity = acc.balance;
-        acc.marginUsedPct = 0;
-      }
-    });
-    positionsStore = positionsStore.filter((p) => p.environment !== "paper");
-    const ref = nextOrderRef();
-    recordsStore = [
-      {
-        id: `rec-${Date.now()}`,
-        ref,
-        timeEat: eatTimestamp(),
-        accountId: "acc-paper-main",
-        accountLabel: "Paper Workspace",
-        broker: "paper",
-        origin: "Guard",
-        symbol: "ALL",
-        side: "—",
-        status: "Closed",
-        summary: `Emergency flatten closed ${paperOpen.length} simulated paper positions; ${nonPaperCount} broker positions await backend connection`,
-        impact: `${paperOpen.length} closed`,
-      },
-      ...recordsStore,
-    ];
-    return latency({
-      mode: "simulated",
-      ref,
-      title: `Flattened ${paperOpen.length} Paper positions · Automation halted`,
-      detail: `${nonPaperCount} non-paper demo positions remain untouched (Ready — broker flatten executes when backend is connected).`,
-    }, 420, 700);
+  killSwitchStore=nextState;
+  killListeners.forEach(listener=>listener());
+  if(nextState!=="armed"){
+    rulesStore=rulesStore.map(r=>({...r,enabled:false}));
+    schedulesStore=schedulesStore.map(r=>({...r,active:false}));
+  }else if(before!=="armed"){
+    rulesStore=rulesStore.map(r=>({...r,enabled:priorRules.has(r.id)&&!r.copilot}));
+    schedulesStore=schedulesStore.map(r=>({...r,active:priorSchedules.has(r.id)}));
   }
-
-  // Re-arm
-  rulesStore = rulesStore.map((r, idx) => ({ ...r, enabled: idx !== 6 }));
-  schedulesStore = schedulesStore.map((s, idx) => ({ ...s, active: idx !== 10 }));
-  return latency({
-    mode: "simulated",
-    ref: nextOrderRef(),
-    title: "System re-armed",
-    detail: "Kill-switch returned to ARMED standby and active rules/schedules restored.",
-  }, 320, 520);
+  const ref=nextOrderRef();
+  let closed=0;
+  if(nextState==="flattened"&&options?.flatten!==false){
+    const paper=positionsStore.filter(p=>p.broker==="paper"&&p.environment==="paper");
+    closed=paper.length;
+    await Promise.all(paper.map(p=>closePosition(p.id)));
+  }
+  const title=nextState==="armed"?"System re-armed":nextState==="paused"?"Automation paused":options?.flatten===false?"Close-all engaged":`Flattened ${closed} Paper positions`;
+  const outstanding=positionsStore.filter(p=>p.broker!=="paper"||p.environment!=="paper").length;
+  const detail=nextState==="flattened"?`${closed} simulated closures booked. ${outstanding} broker positions remain untouched.`:nextState==="paused"?"Rules and scheduled execution stopped. Manual tickets still pass risk checks unless locked down.":"Prior eligible automation settings restored. Scoped pauses and inactive AI drafts stay in force.";
+  if(!options?.quiet){
+    markEngagement({at:new Date().toISOString(),reason:safeRiskText(reason),command:nextState,ref});
+    addRiskAudit({category:"Control",mode:"Live local",rule:title,scope:"Workspace",subject:"Emergency control",decision:"PASS",reason:safeRiskText(reason),detail,ref});
+  }
+  recordsStore=[{id:`rec-${ref}`,ref,timeEat:eatTimestamp(),accountId:"acc-paper-main",accountLabel:"Workspace",broker:"paper",origin:"Guard",symbol:"ALL",side:"—",status:"Staged",summary:title,impact:nextState.toUpperCase()},...recordsStore];
+  return latency({mode:"simulated",ref,title,detail},350,600);
 }
