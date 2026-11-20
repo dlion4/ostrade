@@ -1,0 +1,7 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+@import "./styles/fonts.css";
+@import "./styles/tokens.css";
+@import "./styles/components/shell.css";
+@import "./styles/components/dashboard-shell.css";
+
+@import "./styles/components/workstation-shell.css";

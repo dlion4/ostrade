@@ -1,0 +1,154 @@
+/* ───────────────────────────────────────────────────────────
+   OStrade global design tokens.
+   Light is the default theme; dark is opt-in via the toggle.
+   Same CSS-variable API drives both, Bootstrap vars are mapped below.
+   ─────────────────────────────────────────────────────────── */
+:root,
+[data-bs-theme="light"] {
+  --os-bg: #f6f7fb;
+  --os-surface-0: #ffffff;
+  --os-surface-1: #ffffff;
+  --os-surface-2: #f1f4f9;
+  --os-surface-3: #e4e9f2;
+  --os-hairline: rgba(15, 23, 42, 0.1);
+  --os-hairline-strong: rgba(15, 23, 42, 0.18);
+
+  --os-text: #0f172a;
+  --os-text-2: #475569;
+  --os-text-3: #64748b;
+
+  --os-brand: #f97316;
+  --os-brand-hover: #ea580c;
+  --os-brand-ink: #c2410c;
+  --os-brand-soft: #fff1e6;
+  --os-on-brand: #ffffff;
+
+  --os-quote: #0891b2;
+  --os-quote-soft: #e0f6fb;
+  --os-up: #16a34a;
+  --os-up-soft: #e3f6ea;
+  --os-down: #dc2626;
+  --os-down-soft: #fde8e8;
+  --os-warn: #b45309;
+  --os-warn-soft: #fdf1d9;
+  --os-ai: #7c3aed;
+  --os-ai-soft: #efe8fd;
+
+  --os-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --os-shadow-md: 0 8px 24px -8px rgba(15, 23, 42, 0.14);
+  --os-shadow-lg: 0 24px 56px -16px rgba(15, 23, 42, 0.2);
+  --os-glow: rgba(249, 115, 22, 0.14);
+  --os-nav-bg: rgba(255, 255, 255, 0.82);
+}
+
+[data-bs-theme="dark"] {
+  --os-bg: #0b0f1a;
+  --os-surface-0: #0b0f1a;
+  --os-surface-1: #121828;
+  --os-surface-2: #1a2236;
+  --os-surface-3: #24304a;
+  --os-hairline: rgba(148, 163, 184, 0.14);
+  --os-hairline-strong: rgba(148, 163, 184, 0.26);
+
+  --os-text: #e6edf7;
+  --os-text-2: #94a3b8;
+  --os-text-3: #64748b;
+
+  --os-brand: #f97316;
+  --os-brand-hover: #fb923c;
+  --os-brand-ink: #fb923c;
+  --os-brand-soft: rgba(249, 115, 22, 0.14);
+  --os-on-brand: #0b0f1a;
+
+  --os-quote: #22d3ee;
+  --os-quote-soft: rgba(34, 211, 238, 0.12);
+  --os-up: #22c55e;
+  --os-up-soft: rgba(34, 197, 94, 0.14);
+  --os-down: #ef4444;
+  --os-down-soft: rgba(239, 68, 68, 0.14);
+  --os-warn: #f59e0b;
+  --os-warn-soft: rgba(245, 158, 11, 0.14);
+  --os-ai: #a855f7;
+  --os-ai-soft: rgba(168, 85, 247, 0.16);
+
+  --os-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --os-shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+  --os-shadow-lg: 0 24px 56px -16px rgba(0, 0, 0, 0.7);
+  --os-glow: rgba(249, 115, 22, 0.12);
+  --os-nav-bg: rgba(11, 15, 26, 0.8);
+}
+
+:root {
+  --os-font-head: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --os-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --os-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --os-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --os-radius: 14px;
+  --os-radius-lg: 20px;
+}
+
+/* Map Bootstrap's token API onto OStrade tokens */
+[data-bs-theme] {
+  --bs-body-font-family: var(--os-font-ui);
+  --bs-body-bg: var(--os-bg);
+  --bs-body-color: var(--os-text);
+  --bs-secondary-color: var(--os-text-2);
+  --bs-tertiary-color: var(--os-text-3);
+  --bs-border-color: var(--os-hairline);
+  --bs-border-radius: 10px;
+  --bs-border-radius-lg: var(--os-radius);
+  --bs-link-color: var(--os-brand-ink);
+  --bs-link-hover-color: var(--os-brand-hover);
+  --bs-link-color-rgb: 194, 65, 12;
+  --bs-heading-color: var(--os-text);
+  --bs-emphasis-color: var(--os-text);
+  --bs-primary: var(--os-brand);
+  --bs-primary-rgb: 249, 115, 22;
+  --bs-focus-ring-color: rgba(249, 115, 22, 0.35);
+}
+
+body {
+  font-family: var(--os-font-ui);
+  background: var(--os-bg);
+  color: var(--os-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, h5, h6, .os-head {
+  font-family: var(--os-font-head);
+  letter-spacing: -0.02em;
+}
+.os-mono {
+  font-family: var(--os-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Signal workspace palette and instrument artwork. */
+:root, [data-bs-theme="light"] {
+  --sd-accent: #e9672e;
+  --sd-accent-ink: #bf4f20;
+  --sd-peach: #fff0e7;
+  --sd-ink: #242729;
+  --sd-muted: #747a80;
+  --sd-soft: #f6f7f8;
+  --sd-line: #e2e4e6;
+  --sd-page: #f7f8f9;
+  --sd-white: #fff;
+  --sd-mint: #eaf6ef;
+  --sd-green: #27815a;
+  --sd-red: #bb5858;
+  --sd-font: var(--os-font-ui);
+  --sd-head: var(--os-font-head);
+  --os-gold-plane-1: #dda83c;
+  --os-gold-plane-2: #f8cf73;
+  --os-gold-plane-3: #ad7924;
+  --os-gold-plane-4: #d5a13c;
+  --os-gold-plane-5: #efd48b;
+  --os-gold-plane-6: #b88930;
+  --os-gold-plane-7: #e6b247;
+  --os-gold-plane-8: #ffdb85;
+  --os-gold-plane-9: #ae7e27;
+}
+[data-bs-theme="dark"] {
+  --sd-ink: #edf0ed; --sd-white: #1b2024; --sd-soft: #252b30; --sd-line: #353d43; --sd-page: #151a1e; --sd-muted: #a1aaaF; --sd-mint: #213a30; --sd-green: #7ec59f; --sd-red: #e49898; --sd-peach: #3d2b22; --sd-accent-ink: #f69a6e;
+}

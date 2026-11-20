@@ -1,0 +1,561 @@
+/* Shared Trader Dashboard Shell & Primitives (T-1..T-16)
+   Loaded at app root per §1.4 & §7 so topbar, sidebar, BrokerBadge,
+   SideTag, and KillSwitch render identically across all 16 dashboard pages. */
+
+.os-dash-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--os-bg);
+  color: var(--os-text);
+}
+
+/* ── Sticky Top Bar ──────────────────────────────────────── */
+.os-dash-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+  min-height: 64px;
+  background: var(--os-nav-bg);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--os-hairline);
+  display: flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  gap: 0.65rem;
+}
+@media (min-width: 1200px) {
+  .os-dash-topbar {
+    padding: 0.45rem 1.5rem;
+  }
+}
+
+.os-dash-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+.os-dash-menu-btn {
+  display: inline-grid;
+}
+@media (min-width: 1200px) {
+  .os-dash-menu-btn {
+    display: none !important;
+  }
+}
+
+.os-dash-cockpit-tag {
+  display: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: var(--os-surface-2);
+  border: 1px solid var(--os-hairline);
+  color: var(--os-text-3);
+  font-family: var(--os-font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+@media (min-width: 768px) {
+  .os-dash-cockpit-tag {
+    display: inline-block;
+  }
+}
+
+/* Global Account Context Switcher */
+.os-acct-switcher-wrap {
+  position: relative;
+  margin-left: 0.25rem;
+}
+.os-acct-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 40px;
+  padding: 0 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--os-hairline-strong);
+  background: var(--os-surface-1);
+  color: var(--os-text);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s var(--os-ease), background-color 0.18s var(--os-ease);
+}
+.os-acct-switcher-btn:hover {
+  background: var(--os-surface-2);
+  border-color: var(--os-brand);
+}
+.os-acct-switcher-meta {
+  display: none;
+  color: var(--os-text-2);
+  font-family: var(--os-font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+@media (min-width: 640px) {
+  .os-acct-switcher-meta {
+    display: inline;
+  }
+}
+
+.os-pop-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1060;
+  width: min(92vw, 370px);
+  padding: 0.65rem;
+  border-radius: var(--os-radius);
+  border: 1px solid var(--os-hairline-strong);
+  background: var(--os-surface-1);
+  box-shadow: var(--os-shadow-lg);
+}
+.os-pop-menu.is-right {
+  left: auto;
+  right: 0;
+}
+.os-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--os-hairline);
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--os-text-3);
+}
+.os-acct-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--os-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.16s var(--os-ease);
+}
+.os-acct-option:hover {
+  background: var(--os-surface-2);
+}
+.os-acct-option.is-active {
+  background: var(--os-brand-soft);
+  border-color: var(--os-brand);
+}
+.os-acct-option strong {
+  display: block;
+  font-size: 0.85rem;
+}
+.os-acct-option small {
+  display: block;
+  color: var(--os-text-3);
+  font-size: 0.73rem;
+}
+
+/* Mode Segmented Pill in Topbar */
+.os-mode-seg {
+  display: none;
+  align-items: center;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--os-hairline);
+  background: var(--os-surface-2);
+}
+@media (min-width: 992px) {
+  .os-mode-seg {
+    display: inline-flex;
+  }
+}
+.os-mode-seg button {
+  border: 0;
+  height: 32px;
+  padding: 0 0.65rem;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--os-text-2);
+  font-family: var(--os-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.os-mode-seg button.is-paper-active {
+  background: var(--os-up-soft);
+  color: var(--os-up);
+}
+.os-mode-seg button.is-live-active {
+  background: var(--os-brand-soft);
+  color: var(--os-brand-ink);
+}
+
+/* Topbar right cluster */
+.os-dash-top-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.os-clock-chip {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--os-hairline);
+  background: var(--os-surface-1);
+  color: var(--os-text-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+@media (min-width: 1100px) {
+  .os-clock-chip {
+    display: inline-flex;
+  }
+}
+.os-clock-chip:hover {
+  background: var(--os-surface-2);
+  color: var(--os-text);
+}
+
+.os-notif-btn {
+  position: relative;
+}
+.os-notif-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--os-brand);
+  color: var(--os-on-brand);
+  font-family: var(--os-font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* Kill-Switch Button */
+.os-kill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--os-down);
+  background: var(--os-down-soft);
+  color: var(--os-down);
+  font-family: var(--os-font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background-color 0.18s var(--os-ease), color 0.18s var(--os-ease), transform 0.18s var(--os-ease);
+}
+.os-kill-btn:hover {
+  background: var(--os-down);
+  color: #ffffff;
+}
+.os-kill-btn.is-engaged {
+  background: var(--os-down);
+  color: #ffffff;
+}
+.os-kill-label-text {
+  display: none;
+}
+@media (min-width: 576px) {
+  .os-kill-label-text {
+    display: inline;
+  }
+}
+
+/* ── Body Layout: Sidebar + Main ─────────────────────────── */
+.os-dash-body {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.os-dash-sidebar {
+  width: 262px;
+  flex-shrink: 0;
+  background: var(--os-surface-1);
+  border-right: 1px solid var(--os-hairline);
+  display: none;
+  flex-direction: column;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 1rem 0.75rem 1.5rem;
+}
+@media (min-width: 1200px) {
+  .os-dash-sidebar {
+    display: flex;
+  }
+}
+
+.os-dash-offcanvas-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.44);
+  backdrop-filter: blur(3px);
+  display: flex;
+}
+.os-dash-sidebar-mobile {
+  width: min(86vw, 290px);
+  height: 100%;
+  background: var(--os-surface-1);
+  border-right: 1px solid var(--os-hairline);
+  overflow-y: auto;
+  padding: 1rem 0.85rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.os-nav-group-label {
+  padding: 0.75rem 0.65rem 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--os-text-3);
+}
+.os-nav-group-label:first-child {
+  padding-top: 0.15rem;
+}
+
+.os-side-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.52rem 0.65rem;
+  border-radius: 10px;
+  color: var(--os-text-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.16s var(--os-ease), color 0.16s var(--os-ease);
+}
+.os-side-link:hover {
+  background: var(--os-surface-2);
+  color: var(--os-text);
+}
+.os-side-link.active {
+  background: var(--os-brand-soft);
+  color: var(--os-brand-ink);
+  font-weight: 700;
+}
+.os-side-code {
+  margin-left: auto;
+  font-family: var(--os-font-mono);
+  font-size: 0.66rem;
+  color: var(--os-text-3);
+}
+.os-side-link.active .os-side-code {
+  color: var(--os-brand-ink);
+}
+
+.os-sidebar-foot {
+  margin-top: auto;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: var(--os-surface-2);
+  border: 1px solid var(--os-hairline);
+  font-size: 0.76rem;
+  color: var(--os-text-2);
+}
+
+.os-dash-main {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  padding: 1.35rem 1rem 3rem;
+}
+@media (min-width: 768px) {
+  .os-dash-main {
+    padding: 1.5rem 1.5rem 3.5rem;
+  }
+}
+@media (min-width: 1400px) {
+  .os-dash-main {
+    padding: 1.75rem 2rem 4rem;
+  }
+}
+
+/* ── Shared BrokerBadge & Status Chips (§7) ──────────────── */
+.os-broker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.52rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid var(--os-hairline);
+  background: var(--os-surface-2);
+  color: var(--os-text);
+}
+.os-broker-badge.is-paper {
+  background: var(--os-up-soft);
+  color: var(--os-up);
+  border-color: transparent;
+}
+.os-broker-badge.is-deriv {
+  background: var(--os-brand-soft);
+  color: var(--os-brand-ink);
+  border-color: transparent;
+}
+.os-broker-badge.is-exness {
+  background: var(--os-warn-soft);
+  color: var(--os-warn);
+  border-color: transparent;
+}
+.os-broker-badge.is-alpaca {
+  background: var(--os-quote-soft);
+  color: var(--os-quote);
+  border-color: transparent;
+}
+.os-broker-badge.is-ctrader,
+.os-broker-badge.is-oanda {
+  background: var(--os-ai-soft);
+  color: var(--os-ai);
+  border-color: transparent;
+}
+
+.os-env-pill {
+  display: inline-block;
+  padding: 0.14rem 0.45rem;
+  border-radius: 5px;
+  font-family: var(--os-font-mono);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.os-env-pill.is-paper {
+  background: var(--os-up-soft);
+  color: var(--os-up);
+}
+.os-env-pill.is-demo {
+  background: var(--os-quote-soft);
+  color: var(--os-quote);
+}
+.os-env-pill.is-live-ready {
+  background: var(--os-warn-soft);
+  color: var(--os-warn);
+}
+
+/* ── Kill-Switch Confirmation Modal ──────────────────────── */
+.os-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.os-modal-card {
+  width: min(100%, 520px);
+  background: var(--os-surface-1);
+  border: 1px solid var(--os-hairline-strong);
+  border-radius: var(--os-radius-lg);
+  box-shadow: var(--os-shadow-lg);
+  padding: 1.5rem;
+}
+.os-kill-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--os-hairline-strong);
+  background: var(--os-surface-1);
+  color: var(--os-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--os-ease), background-color 0.16s var(--os-ease);
+}
+.os-kill-option:hover {
+  background: var(--os-surface-2);
+}
+.os-kill-option.is-selected {
+  border-color: var(--os-brand);
+  background: var(--os-brand-soft);
+}
+
+@media (max-width: 575.98px) {
+  .os-dash-topbar {
+    padding: 0.35rem 0.45rem;
+    gap: 0.2rem;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+  .os-dash-brand-wrap {
+    gap: 0.25rem;
+  }
+  .os-dash-brand-wrap .os-logo {
+    font-size: 1rem;
+    gap: 0.3rem;
+  }
+  .os-dash-brand-wrap .os-logo-mark {
+    width: 24px;
+    height: 24px;
+  }
+  .os-acct-switcher-wrap {
+    max-width: 110px;
+  }
+  .os-acct-switcher-btn {
+    height: 30px;
+    padding: 0 0.4rem;
+    font-size: 0.72rem;
+    max-width: 110px;
+  }
+  .os-acct-switcher-btn > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 75px;
+  }
+  .os-dash-top-right {
+    gap: 0.2rem;
+  }
+  .os-icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .os-icon-btn.os-shell-theme {
+    display: none !important;
+  }
+  .os-kill-btn {
+    height: 30px;
+    padding: 0 0.4rem;
+    font-size: 0.65rem;
+  }
+  .os-kill-label-text {
+    display: none;
+  }
+}

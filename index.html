@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f8f9" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e9672e'/%3E%3Cpath d='m5 21 6-12h4L9 21zm7 3L22 4h4L16 24zm8 0 6-12h3l-6 12z' fill='white'/%3E%3C/svg%3E" />
+    <meta
+      name="description"
+      content="OStrade is a signal-trading command center. Paste a signal, review the parsed order card, and execute on Paper, Deriv or Exness/MT5."
+    />
+    <title>OStrade — Your signals. Every broker. One click.</title>
+    <script>
+      try {
+        var t = localStorage.getItem("os-theme");
+        document.documentElement.setAttribute("data-bs-theme", t === "dark" ? "dark" : "light");
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

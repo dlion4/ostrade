@@ -1,0 +1,301 @@
+/* A-1 Sign Up — scoped under .page-auth-signup, all classes prefixed .os- */
+.page-auth-signup { overflow-x: clip; }
+.page-auth-signup .os-section { padding: 5rem 0; scroll-margin-top: 80px; }
+.page-auth-signup .os-band { background: var(--os-surface-1); border-block: 1px solid var(--os-hairline); }
+.page-auth-signup .os-section-head { max-width: 700px; margin-bottom: 2.75rem; }
+.page-auth-signup .os-section-head.mx-auto { margin-inline: auto; }
+.page-auth-signup .os-eyebrow { display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--os-brand-ink); margin-bottom: 0.85rem; }
+.page-auth-signup .os-h2 { font-size: clamp(1.85rem, 3.3vw, 2.65rem); font-weight: 700; line-height: 1.12; margin-bottom: 1rem; }
+.page-auth-signup .os-lead { font-size: 1.06rem; color: var(--os-text-2); margin: 0; line-height: 1.65; }
+.page-auth-signup .os-link-arrow { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--os-brand-ink); font-weight: 600; text-decoration: none; }
+.page-auth-signup .os-link-arrow:hover svg { transform: translateX(3px); }
+.page-auth-signup .os-link-arrow svg { transition: transform 0.2s var(--os-ease); }
+.page-auth-signup .os-sim-badge, .page-auth-signup .os-static-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.6rem; border-radius: 6px;
+  background: var(--os-up-soft); color: var(--os-up); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.07em; white-space: nowrap;
+}
+.page-auth-signup .os-up { color: var(--os-up); }
+.page-auth-signup .os-down { color: var(--os-down); }
+
+/* ── S1 Split hero ───────────────────────────────────────── */
+.page-auth-signup .os-auth-hero { padding: 3.5rem 0 4rem; }
+.page-auth-signup .os-auth-grid { display: grid; gap: 1.5rem; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 992px) { .page-auth-signup .os-auth-grid { grid-template-columns: 0.95fr 1.05fr; gap: 2rem; } }
+.page-auth-signup .os-brand-col, .page-auth-signup .os-form-col { min-width: 0; }
+
+/* Dark terminal brand panel */
+.page-auth-signup .os-brand-panel {
+  position: relative; overflow: hidden; min-height: 100%; padding: 2rem; border-radius: var(--os-radius-lg);
+  background: #0f172a; color: #f8fafc; box-shadow: var(--os-shadow-lg); display: flex; flex-direction: column;
+}
+.page-auth-signup .os-brand-glow { position: absolute; inset: -25% -20% auto auto; width: 80%; height: 70%; background: radial-gradient(closest-side, rgba(249,115,22,0.2), transparent 72%); pointer-events: none; }
+.page-auth-signup .os-brand-panel > *:not(.os-brand-glow) { position: relative; }
+.page-auth-signup .os-brand-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 3rem; }
+.page-auth-signup .os-brand-logo { display: inline-flex; align-items: center; gap: 0.55rem; font-family: var(--os-font-head); font-weight: 700; font-size: 1.2rem; letter-spacing: -0.03em; }
+.page-auth-signup .os-brand-logo svg { color: #f97316; }
+.page-auth-signup .os-brand-badge { padding: 0.3rem 0.65rem; border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; color: #cbd5e1; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; }
+.page-auth-signup .os-brand-kicker { color: #fb923c; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.page-auth-signup .os-brand-copy h2 { margin: 0.9rem 0 1rem; font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.04em; color: #fff; }
+.page-auth-signup .os-brand-copy h2 em { color: #f97316; font-style: normal; }
+.page-auth-signup .os-brand-copy p { max-width: 460px; margin: 0 0 2rem; color: #cbd5e1; font-size: 1rem; line-height: 1.65; }
+.page-auth-signup .os-terminal { border: 1px solid rgba(255,255,255,0.13); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.035); }
+.page-auth-signup .os-terminal-head { display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-family: var(--os-font-mono); font-size: 0.7rem; }
+.page-auth-signup .os-terminal-dots { display: inline-flex; gap: 0.3rem; }
+.page-auth-signup .os-terminal-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); }
+.page-auth-signup .os-terminal-dots i:first-child { background: #f97316; }
+.page-auth-signup .os-terminal-static { margin-left: auto; color: #22c55e; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em; }
+.page-auth-signup .os-terminal-body { display: flex; align-items: center; gap: 0.65rem; padding: 1rem 0.9rem; flex-wrap: wrap; }
+.page-auth-signup .os-term-signal, .page-auth-signup .os-term-order { flex: 1 1 150px; min-width: 0; padding: 0.7rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); }
+.page-auth-signup .os-term-signal > span, .page-auth-signup .os-term-account { display: block; color: #94a3b8; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.page-auth-signup .os-term-signal .os-mono { margin-top: 0.4rem; color: #e2e8f0; font-size: 0.76rem; line-height: 1.6; }
+.page-auth-signup .os-term-arrow { flex: none; color: #f97316; }
+.page-auth-signup .os-term-order > div:first-child { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.page-auth-signup .os-term-order > div:first-child .os-mono { color: #fff; font-weight: 700; font-size: 0.95rem; }
+.page-auth-signup .os-term-side { padding: 0.15rem 0.45rem; border-radius: 5px; background: rgba(34,197,94,0.18); color: #4ade80; font-size: 0.62rem; font-weight: 800; }
+.page-auth-signup .os-term-order > span { display: block; margin-top: 0.25rem; color: #cbd5e1; font-size: 0.72rem; }
+.page-auth-signup .os-term-order .os-term-account { margin-top: 0.5rem; color: #22d3ee; text-transform: none; letter-spacing: 0; }
+.page-auth-signup .os-term-quotes { display: grid; gap: 0.35rem; padding: 0.75rem 0.9rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
+.page-auth-signup .os-term-quote { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0.55rem; border-radius: 7px; background: rgba(255,255,255,0.035); font-size: 0.72rem; color: #cbd5e1; }
+.page-auth-signup .os-term-quote span:first-child { color: #fff; font-weight: 700; }
+.page-auth-signup .os-term-up { color: #4ade80; }
+.page-auth-signup .os-term-down { color: #f87171; }
+.page-auth-signup .os-term-retry { padding: 0.5rem; border: 1px dashed rgba(255,255,255,0.3); border-radius: 8px; background: transparent; color: #cbd5e1; font-size: 0.75rem; cursor: pointer; }
+.page-auth-signup .os-brand-foot { display: flex; align-items: flex-start; gap: 0.5rem; margin: 1.5rem 0 0; color: #94a3b8; font-size: 0.78rem; line-height: 1.5; }
+.page-auth-signup .os-brand-foot svg { flex: none; margin-top: 2px; color: #4ade80; }
+
+/* Form card */
+.page-auth-signup .os-form-card { background: var(--os-surface-1); border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); box-shadow: var(--os-shadow-lg); overflow: hidden; }
+.page-auth-signup .os-form-head { padding: 1.75rem 1.75rem 1.25rem; border-bottom: 1px solid var(--os-hairline); }
+.page-auth-signup .os-form-badge { display: inline-block; padding: 0.22rem 0.6rem; border-radius: 6px; background: var(--os-brand-soft); color: var(--os-brand-ink); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; }
+.page-auth-signup .os-form-head h1 { margin: 0.85rem 0 0.4rem; font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 700; }
+.page-auth-signup .os-form-head p { margin: 0; color: var(--os-text-2); font-size: 0.9rem; }
+.page-auth-signup .os-form-body { display: grid; gap: 1.5rem; padding: 1.5rem 1.75rem 1.75rem; }
+.page-auth-signup .os-fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 0.85rem; }
+.page-auth-signup .os-fieldset legend { display: flex; align-items: center; gap: 0.55rem; float: left; width: 100%; margin-bottom: 0.75rem; padding: 0 0 0.5rem; border-bottom: 1px dashed var(--os-hairline-strong); font-family: var(--os-font-head); font-size: 0.98rem; font-weight: 700; }
+.page-auth-signup .os-fieldset-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--os-brand-soft); color: var(--os-brand-ink); font-size: 0.66rem; font-weight: 700; }
+.page-auth-signup .os-fieldset + .os-fieldset { margin-top: 0.25rem; }
+.page-auth-signup .os-field { display: grid; gap: 0.4rem; clear: both; }
+.page-auth-signup .os-field label, .page-auth-signup .os-field-label, .page-auth-signup .os-otp-input label { font-size: 0.82rem; font-weight: 600; }
+.page-auth-signup .os-req, .page-auth-signup .os-opt { margin-left: 0.4rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; }
+.page-auth-signup .os-req { color: var(--os-brand-ink); }
+.page-auth-signup .os-opt { color: var(--os-text-3); }
+.page-auth-signup .os-input-wrap { position: relative; display: flex; align-items: center; }
+.page-auth-signup .os-input-wrap > svg { position: absolute; left: 0.85rem; color: var(--os-text-3); pointer-events: none; }
+.page-auth-signup .os-input {
+  width: 100%; height: 46px; padding: 0 0.85rem; border: 1px solid var(--os-hairline-strong); border-radius: 11px;
+  background: var(--os-surface-1); color: var(--os-text); font-family: var(--os-font-ui); font-size: 0.92rem;
+  transition: border-color 0.18s var(--os-ease), box-shadow 0.18s var(--os-ease);
+}
+.page-auth-signup .os-input-wrap .os-input { padding-left: 2.55rem; }
+.page-auth-signup .os-input::placeholder { color: var(--os-text-3); }
+.page-auth-signup .os-input:focus { outline: none; border-color: var(--os-brand); box-shadow: 0 0 0 3px var(--os-brand-soft); }
+.page-auth-signup .os-input.is-invalid { border-color: var(--os-down); }
+.page-auth-signup .os-input.is-valid { border-color: var(--os-up); }
+.page-auth-signup .os-input-toggle, .page-auth-signup .os-inline-action {
+  position: absolute; right: 0.5rem; height: 34px; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0 0.6rem;
+  border: 1px solid var(--os-hairline); border-radius: 8px; background: var(--os-surface-2); color: var(--os-text-2);
+  font-size: 0.72rem; font-weight: 700; cursor: pointer;
+}
+.page-auth-signup .os-input-toggle:hover, .page-auth-signup .os-inline-action:hover { color: var(--os-brand-ink); border-color: var(--os-brand); }
+.page-auth-signup .os-input-wrap:has(.os-inline-action) .os-input { padding-right: 6.5rem; }
+.page-auth-signup .os-field-error { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--os-down); font-size: 0.76rem; font-weight: 600; }
+.page-auth-signup .os-field-hint { color: var(--os-text-3); font-size: 0.72rem; line-height: 1.45; }
+.page-auth-signup .os-radio-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.page-auth-signup .os-radio { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.9rem; border: 1px solid var(--os-hairline-strong); border-radius: 10px; background: var(--os-surface-1); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: border-color 0.18s var(--os-ease), background-color 0.18s var(--os-ease); }
+.page-auth-signup .os-radio input { accent-color: var(--os-brand); }
+.page-auth-signup .os-radio.is-active { border-color: var(--os-brand); background: var(--os-brand-soft); }
+.page-auth-signup .os-strength { display: flex; align-items: center; gap: 0.75rem; }
+.page-auth-signup .os-strength-bars { display: flex; gap: 0.25rem; flex: 1; }
+.page-auth-signup .os-strength-bars span { flex: 1; height: 6px; border-radius: 999px; background: var(--os-surface-3); transition: background-color 0.2s var(--os-ease); }
+.page-auth-signup .os-strength-bars span.is-on.is-1, .page-auth-signup .os-strength-bars span.is-on.is-2 { background: var(--os-warn); }
+.page-auth-signup .os-strength-bars span.is-on.is-3, .page-auth-signup .os-strength-bars span.is-on.is-4 { background: var(--os-up); }
+.page-auth-signup .os-strength-label { min-width: 72px; text-align: right; color: var(--os-text-3); font-size: 0.74rem; font-weight: 700; }
+.page-auth-signup .os-policy { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.page-auth-signup .os-policy li { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--os-text-3); font-size: 0.76rem; }
+.page-auth-signup .os-policy li svg { color: var(--os-down); }
+.page-auth-signup .os-policy li.is-ok { color: var(--os-up); }
+.page-auth-signup .os-text-action { display: inline-flex; align-items: center; gap: 0.4rem; width: fit-content; padding: 0; border: 0; background: transparent; color: var(--os-brand-ink); font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.page-auth-signup .os-text-action:hover { text-decoration: underline; }
+.page-auth-signup .os-text-action:disabled { opacity: 0.6; cursor: progress; }
+.page-auth-signup .os-fieldset-note { margin: 0; color: var(--os-text-2); font-size: 0.84rem; line-height: 1.5; }
+.page-auth-signup .os-otp-row { display: flex; gap: 0.5rem; }
+.page-auth-signup .os-otp-row span { flex: 1; height: 48px; display: grid; place-items: center; border: 1px dashed var(--os-hairline-strong); border-radius: 10px; background: var(--os-surface-2); color: var(--os-text-3); font-size: 1.1rem; font-weight: 700; }
+.page-auth-signup .os-otp-input { display: flex; align-items: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+.page-auth-signup .os-otp-input label { flex: 1 1 100%; }
+.page-auth-signup .os-otp-input input { flex: 1 1 150px; letter-spacing: 0.18em; }
+.page-auth-signup .os-pledge-mini { display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem; border-radius: 12px; background: var(--os-up-soft); border: 1px solid var(--os-hairline); }
+.page-auth-signup .os-pledge-mini-icon { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: var(--os-surface-1); color: var(--os-up); }
+.page-auth-signup .os-pledge-mini > div { flex: 1; }
+.page-auth-signup .os-pledge-mini strong { font-size: 0.9rem; }
+.page-auth-signup .os-pledge-mini p { margin: 0.2rem 0 0; color: var(--os-text-2); font-size: 0.8rem; line-height: 1.5; }
+.page-auth-signup .os-consents { gap: 0.6rem; }
+.page-auth-signup .os-consent { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.8rem 0.9rem; border: 1px solid var(--os-hairline); border-radius: 10px; background: var(--os-surface-1); color: var(--os-text-2); font-size: 0.84rem; line-height: 1.5; cursor: pointer; }
+.page-auth-signup .os-consent.is-invalid { border-color: var(--os-down); }
+.page-auth-signup .os-consent input { flex: none; margin-top: 3px; width: 17px; height: 17px; accent-color: var(--os-brand); }
+.page-auth-signup .os-consent a { color: var(--os-brand-ink); font-weight: 700; }
+.page-auth-signup .os-consent-status { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.25rem; color: var(--os-text-3); font-size: 0.72rem; }
+.page-auth-signup .os-consent-status span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.page-auth-signup .os-consent-status span svg { color: var(--os-down); }
+.page-auth-signup .os-consent-status span.is-done { color: var(--os-up); }
+.page-auth-signup .os-consent-status span.is-done svg { color: var(--os-up); }
+.page-auth-signup .os-submit-note { display: flex; align-items: flex-start; gap: 0.45rem; margin: -0.5rem 0 0; color: var(--os-text-3); font-size: 0.74rem; line-height: 1.5; }
+.page-auth-signup .os-submit-note svg { flex: none; margin-top: 2px; }
+.page-auth-signup .os-form-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 1rem; padding: 1rem 1.75rem; border-top: 1px solid var(--os-hairline); background: var(--os-surface-2); font-size: 0.8rem; color: var(--os-text-2); }
+.page-auth-signup .os-form-foot a { color: var(--os-brand-ink); font-weight: 700; text-decoration: none; }
+.page-auth-signup .os-form-foot a:hover { text-decoration: underline; }
+.page-auth-signup .os-form-foot-links { display: inline-flex; flex-wrap: wrap; gap: 0.9rem; }
+/* Inert designed state shared with OTP previews */
+.page-auth-signup .os-ready { display: flex; align-items: flex-start; gap: 0.85rem; flex-wrap: wrap; padding: 1rem 1.15rem; border-radius: 12px; background: var(--os-warn-soft); border: 1px solid var(--os-warn); animation: os-signup-up 0.25s var(--os-ease); }
+@keyframes os-signup-up { from { opacity: 0; transform: translateY(10px); } }
+.page-auth-signup .os-ready-icon { flex: none; color: var(--os-warn); }
+.page-auth-signup .os-ready-body { flex: 1 1 240px; }
+.page-auth-signup .os-ready-badge { display: inline-block; padding: 0.2rem 0.5rem; margin-bottom: 0.5rem; border-radius: 5px; background: var(--os-surface-1); color: var(--os-warn); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; }
+.page-auth-signup .os-ready h3 { margin: 0 0 0.35rem; font-size: 0.98rem; font-weight: 700; }
+.page-auth-signup .os-ready p { margin: 0 0 0.35rem; color: var(--os-text-2); font-size: 0.82rem; line-height: 1.5; }
+.page-auth-signup .os-ready-detail { color: var(--os-text) !important; }
+.page-auth-signup .os-ready-ref { color: var(--os-text-3); font-size: 0.7rem; }
+
+/* ── S2 Trust strip ──────────────────────────────────────── */
+.page-auth-signup .os-trust-section { padding: 2.5rem 0; border-block: 1px solid var(--os-hairline); background: var(--os-surface-1); }
+.page-auth-signup .os-strip-label { margin-bottom: 1.25rem; text-align: center; color: var(--os-text-3); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.page-auth-signup .os-trust-strip { list-style: none; padding: 0; margin: 0; display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: thin; }
+.page-auth-signup .os-trust-strip li { flex: 0 0 210px; display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.75rem 0.9rem; border: 1px solid var(--os-hairline); border-radius: 11px; background: var(--os-bg); }
+.page-auth-signup .os-trust-strip li > svg { flex: none; margin-top: 2px; color: var(--os-brand-ink); }
+.page-auth-signup .os-trust-strip strong, .page-auth-signup .os-trust-strip small { display: block; }
+.page-auth-signup .os-trust-strip strong { font-size: 0.82rem; }
+.page-auth-signup .os-trust-strip small { margin-top: 0.2rem; color: var(--os-text-3); font-size: 0.7rem; line-height: 1.4; }
+
+/* ── S3 Paper pledge + workspace table ───────────────────── */
+.page-auth-signup .os-pledge-card { padding: 1.5rem; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-surface-1); }
+.page-auth-signup .os-pledge-icon { width: 48px; height: 48px; display: grid; place-items: center; margin-bottom: 1rem; border-radius: 14px; background: var(--os-up-soft); color: var(--os-up); }
+.page-auth-signup .os-pledge-card h3 { margin-bottom: 0.85rem; font-size: 1.2rem; font-weight: 700; }
+.page-auth-signup .os-pledge-card ul { list-style: none; padding: 0; margin: 0 0 1.25rem; display: grid; gap: 0.7rem; }
+.page-auth-signup .os-pledge-card li { display: flex; align-items: flex-start; gap: 0.55rem; color: var(--os-text-2); font-size: 0.88rem; line-height: 1.5; }
+.page-auth-signup .os-pledge-card li svg { flex: none; margin-top: 3px; color: var(--os-up); }
+.page-auth-signup .os-workspace { border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-bg); overflow: hidden; box-shadow: var(--os-shadow-sm); }
+.page-auth-signup .os-workspace-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 1rem 1.15rem; border-bottom: 1px solid var(--os-hairline); }
+.page-auth-signup .os-workspace-head strong, .page-auth-signup .os-workspace-head span { display: block; }
+.page-auth-signup .os-workspace-head strong { font-size: 0.95rem; }
+.page-auth-signup .os-workspace-head > div > span { color: var(--os-text-3); font-size: 0.74rem; }
+.page-auth-signup .os-seg { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 10px; background: var(--os-surface-2); }
+.page-auth-signup .os-seg button { height: 34px; padding: 0 0.75rem; border: 0; border-radius: 7px; background: transparent; color: var(--os-text-2); font-size: 0.76rem; font-weight: 600; cursor: pointer; }
+.page-auth-signup .os-seg button.is-active { background: var(--os-surface-1); color: var(--os-text); box-shadow: var(--os-shadow-sm); }
+.page-auth-signup .os-workspace-scroll { max-height: 460px; overflow: auto; }
+.page-auth-signup .os-workspace-table, .page-auth-signup .os-quotes-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.page-auth-signup .os-workspace-table th, .page-auth-signup .os-quotes-table th { padding: 0.65rem 0.85rem; background: var(--os-surface-2); color: var(--os-text-3); font-size: 0.66rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.page-auth-signup .os-workspace-table td, .page-auth-signup .os-quotes-table td { padding: 0.65rem 0.85rem; border-top: 1px solid var(--os-hairline); color: var(--os-text-2); line-height: 1.4; }
+.page-auth-signup .os-workspace-table tbody tr:hover td, .page-auth-signup .os-quotes-table tbody tr:hover td { background: var(--os-surface-2); }
+.page-auth-signup .os-workspace-table td:first-child strong { color: var(--os-text); }
+.page-auth-signup .os-mode-chip { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+.page-auth-signup .os-mode-chip.is-sim { background: var(--os-up-soft); color: var(--os-up); }
+.page-auth-signup .os-mode-chip.is-demo { background: var(--os-quote-soft); color: var(--os-quote); }
+.page-auth-signup .os-workspace-foot, .page-auth-signup .os-quotes-foot { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-top: 1px solid var(--os-hairline); background: var(--os-surface-1); color: var(--os-text-3); font-size: 0.74rem; }
+.page-auth-signup .os-workspace-foot svg, .page-auth-signup .os-quotes-foot svg { flex: none; color: var(--os-brand-ink); }
+
+/* ── S4 Journey ──────────────────────────────────────────── */
+.page-auth-signup .os-journey { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.85rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .page-auth-signup .os-journey { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1200px) { .page-auth-signup .os-journey { grid-template-columns: repeat(5, 1fr); } }
+.page-auth-signup .os-journey li { position: relative; height: 100%; display: flex; flex-direction: column; padding: 1.15rem; border: 1px solid var(--os-hairline); border-radius: var(--os-radius); background: var(--os-surface-1); transition: transform 0.2s var(--os-ease), box-shadow 0.2s var(--os-ease), border-color 0.2s var(--os-ease); }
+.page-auth-signup .os-journey li:hover { transform: translateY(-4px); box-shadow: var(--os-shadow-sm); border-color: var(--os-hairline-strong); }
+.page-auth-signup .os-journey li.is-current { border-color: var(--os-brand); background: var(--os-brand-soft); }
+.page-auth-signup .os-journey-n { color: var(--os-text-3); font-size: 0.7rem; font-weight: 700; }
+.page-auth-signup .os-journey-code { display: inline-block; width: fit-content; margin: 0.6rem 0 0.5rem; padding: 0.18rem 0.5rem; border-radius: 5px; background: var(--os-surface-2); color: var(--os-text-2); font-family: var(--os-font-mono); font-size: 0.65rem; font-weight: 700; }
+.page-auth-signup .os-journey h3 { margin: 0 0 0.4rem; font-size: 0.95rem; font-weight: 700; }
+.page-auth-signup .os-journey p { flex: 1; margin: 0 0 0.85rem; color: var(--os-text-2); font-size: 0.78rem; line-height: 1.5; }
+.page-auth-signup .os-journey-link { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--os-brand-ink); font-size: 0.75rem; font-weight: 700; text-decoration: none; }
+.page-auth-signup .os-journey-link:hover { text-decoration: underline; }
+
+/* ── S5 Security matrix ──────────────────────────────────── */
+.page-auth-signup .os-security-aside { margin-top: 1.5rem; padding: 1.35rem; border: 1px solid var(--os-hairline); border-radius: var(--os-radius); background: var(--os-bg); }
+.page-auth-signup .os-security-aside-icon { width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 0.85rem; border-radius: 12px; background: var(--os-up-soft); color: var(--os-up); }
+.page-auth-signup .os-security-aside h3 { margin-bottom: 0.5rem; font-size: 1.05rem; font-weight: 700; }
+.page-auth-signup .os-security-aside p { color: var(--os-text-2); font-size: 0.86rem; line-height: 1.6; }
+.page-auth-signup .os-security-panel { border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-bg); overflow: hidden; }
+.page-auth-signup .os-security-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.75rem; border-bottom: 1px solid var(--os-hairline); background: var(--os-surface-2); }
+.page-auth-signup .os-security-filters button { height: 34px; padding: 0 0.8rem; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--os-text-2); font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+.page-auth-signup .os-security-filters button:hover { color: var(--os-text); }
+.page-auth-signup .os-security-filters button.is-active { background: var(--os-surface-1); color: var(--os-text); border-color: var(--os-hairline-strong); box-shadow: var(--os-shadow-sm); }
+.page-auth-signup .os-check-list { list-style: none; padding: 0.75rem; margin: 0; display: grid; gap: 0.45rem; }
+.page-auth-signup .os-check-list li { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0.9rem; border: 1px solid var(--os-hairline); border-radius: 10px; background: var(--os-surface-1); }
+.page-auth-signup .os-check-mark { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--os-up-soft); color: var(--os-up); }
+.page-auth-signup .os-check-list li > div { flex: 1; }
+.page-auth-signup .os-check-list strong, .page-auth-signup .os-check-list small { display: block; }
+.page-auth-signup .os-check-list strong { font-size: 0.88rem; }
+.page-auth-signup .os-check-list small { margin-top: 0.2rem; color: var(--os-text-3); font-size: 0.76rem; line-height: 1.45; }
+.page-auth-signup .os-scope-chip { flex: none; padding: 0.2rem 0.5rem; border-radius: 6px; background: var(--os-surface-2); color: var(--os-text-2); font-size: 0.68rem; font-weight: 700; }
+
+/* ── S6 Benefits ─────────────────────────────────────────── */
+.page-auth-signup .os-benefit { height: 100%; padding: 1.15rem; border: 1px solid var(--os-hairline); border-radius: var(--os-radius); background: var(--os-surface-1); transition: transform 0.2s var(--os-ease), box-shadow 0.2s var(--os-ease), border-color 0.2s var(--os-ease); }
+.page-auth-signup .os-benefit:hover { transform: translateY(-4px); box-shadow: var(--os-shadow-sm); border-color: var(--os-brand); }
+.page-auth-signup .os-benefit-n { color: var(--os-brand-ink); font-size: 0.7rem; font-weight: 700; }
+.page-auth-signup .os-benefit h3 { margin: 0.6rem 0 0.4rem; font-size: 0.98rem; font-weight: 700; }
+.page-auth-signup .os-benefit p { margin: 0; color: var(--os-text-2); font-size: 0.8rem; line-height: 1.5; }
+
+/* ── S7 Static quotes ────────────────────────────────────── */
+.page-auth-signup .os-quotes-panel { border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-bg); overflow: hidden; box-shadow: var(--os-shadow-sm); }
+.page-auth-signup .os-quotes-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.85rem 1rem; border-bottom: 1px solid var(--os-hairline); background: var(--os-surface-2); }
+.page-auth-signup .os-quotes-head label { margin-left: auto; color: var(--os-text-3); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.page-auth-signup .os-quotes-head select { height: 36px; padding: 0 1.8rem 0 0.65rem; border: 1px solid var(--os-hairline-strong); border-radius: 9px; background: var(--os-surface-1); color: var(--os-text); font-size: 0.8rem; cursor: pointer; }
+.page-auth-signup .os-quotes-scroll { max-height: 480px; overflow: auto; }
+.page-auth-signup .os-quotes-table td:first-child strong { color: var(--os-text); }
+.page-auth-signup .os-asset-chip { padding: 0.2rem 0.5rem; border-radius: 6px; background: var(--os-surface-2); color: var(--os-text-2); font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+.page-auth-signup .os-quotes-table td:last-child { font-weight: 700; }
+@media (max-width: 767.98px) {
+  .page-auth-signup .os-workspace-scroll, .page-auth-signup .os-quotes-scroll { overflow-x: auto; }
+  .page-auth-signup .os-workspace-table, .page-auth-signup .os-quotes-table { min-width: 620px; }
+}
+
+/* ── S8 FAQ ──────────────────────────────────────────────── */
+.page-auth-signup .os-faq { display: grid; gap: 0.6rem; }
+.page-auth-signup .os-faq-item { border: 1px solid var(--os-hairline); border-radius: var(--os-radius); background: var(--os-surface-1); transition: border-color 0.2s var(--os-ease), box-shadow 0.2s var(--os-ease); }
+.page-auth-signup .os-faq-item.is-open { border-color: var(--os-hairline-strong); box-shadow: var(--os-shadow-sm); }
+.page-auth-signup .os-faq-item h3 { margin: 0; font-family: var(--os-font-ui); letter-spacing: 0; }
+.page-auth-signup .os-faq-item button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border: 0; border-radius: var(--os-radius); background: transparent; color: var(--os-text); font-size: 0.98rem; font-weight: 600; text-align: left; cursor: pointer; }
+.page-auth-signup .os-faq-item button:focus-visible { outline: 3px solid rgba(249,115,22,0.4); outline-offset: -3px; }
+.page-auth-signup .os-faq-item button svg { flex: none; color: var(--os-text-3); transition: transform 0.22s var(--os-ease); }
+.page-auth-signup .os-faq-item.is-open button svg { transform: rotate(180deg); color: var(--os-brand-ink); }
+.page-auth-signup .os-faq-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.24s var(--os-ease); }
+.page-auth-signup .os-faq-item.is-open .os-faq-panel { grid-template-rows: 1fr; }
+.page-auth-signup .os-faq-panel > div { overflow: hidden; }
+.page-auth-signup .os-faq-panel p { margin: 0; padding: 0 1.25rem 1.25rem; color: var(--os-text-2); line-height: 1.65; }
+
+/* ── S9 Legal ────────────────────────────────────────────── */
+.page-auth-signup .os-legal-section { padding: 3.5rem 0; }
+.page-auth-signup .os-risk-card { display: flex; align-items: flex-start; gap: 1rem; height: 100%; padding: 1.5rem; border: 1px solid var(--os-hairline); border-left: 3px solid var(--os-warn); border-radius: var(--os-radius); background: var(--os-bg); }
+.page-auth-signup .os-risk-icon { flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; background: var(--os-warn-soft); color: var(--os-warn); }
+.page-auth-signup .os-risk-card h2 { margin-bottom: 0.6rem; font-size: 1.25rem; font-weight: 700; }
+.page-auth-signup .os-risk-card p { margin: 0; color: var(--os-text-2); font-size: 0.88rem; line-height: 1.65; }
+.page-auth-signup .os-legal-links { padding: 1.3rem; border: 1px solid var(--os-hairline); border-radius: var(--os-radius); background: var(--os-bg); }
+.page-auth-signup .os-legal-links h3 { margin-bottom: 0.75rem; font-size: 1rem; font-weight: 700; }
+.page-auth-signup .os-legal-links a { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0; border-top: 1px solid var(--os-hairline); color: var(--os-text-2); font-size: 0.86rem; font-weight: 600; text-decoration: none; }
+.page-auth-signup .os-legal-links a > svg:first-child { color: var(--os-brand-ink); }
+.page-auth-signup .os-legal-links a > svg:last-child { margin-left: auto; color: var(--os-text-3); }
+.page-auth-signup .os-legal-links a:hover { color: var(--os-brand-ink); }
+
+/* ── S10 Final band ──────────────────────────────────────── */
+.page-auth-signup .os-final-section { padding-top: 1rem; }
+.page-auth-signup .os-final-band { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; padding: 2rem; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-surface-1); box-shadow: var(--os-shadow-sm); }
+.page-auth-signup .os-final-icon { flex: none; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 15px; background: var(--os-brand-soft); color: var(--os-brand-ink); }
+.page-auth-signup .os-final-band > div:nth-child(2) { flex: 1 1 280px; }
+.page-auth-signup .os-final-band h2 { margin-bottom: 0.35rem; font-size: 1.35rem; font-weight: 700; }
+.page-auth-signup .os-final-band p { margin: 0; color: var(--os-text-2); font-size: 0.88rem; line-height: 1.5; }
+.page-auth-signup .os-final-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+  .page-auth-signup .os-section { padding: 4rem 0; }
+  .page-auth-signup .os-auth-hero { padding: 2.5rem 0 3rem; }
+  .page-auth-signup .os-brand-top { margin-bottom: 2rem; }
+}
+@media (max-width: 575.98px) {
+  .page-auth-signup .os-brand-panel { padding: 1.5rem; }
+  .page-auth-signup .os-form-head, .page-auth-signup .os-form-body, .page-auth-signup .os-form-foot { padding-inline: 1.15rem; }
+  .page-auth-signup .os-terminal-body { flex-direction: column; align-items: stretch; }
+  .page-auth-signup .os-term-arrow { align-self: center; transform: rotate(90deg); }
+  .page-auth-signup .os-otp-row { gap: 0.3rem; }
+  .page-auth-signup .os-otp-row span { height: 42px; font-size: 0.9rem; }
+  .page-auth-signup .os-pledge-mini { flex-wrap: wrap; }
+  .page-auth-signup .os-final-actions .os-btn { flex: 1; }
+  .page-auth-signup .os-form-foot-links { gap: 0.6rem; }
+}

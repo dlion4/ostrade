@@ -1,0 +1,26 @@
+{
+  "targets": [
+    {
+      "name": "Single-file Vite",
+      "offlinePaperExecution": true,
+      "dataRequests": 0,
+      "webSockets": 0,
+      "consoleErrors": 0
+    },
+    {
+      "name": "TanStack Start SPA",
+      "offlinePaperExecution": true,
+      "dataRequests": 0,
+      "webSockets": 0,
+      "consoleErrors": 0
+    }
+  ],
+  "viewports": [
+    1440,
+    1280,
+    768,
+    360
+  ],
+  "serviceTests": 9,
+  "regressionRoutes": 21
+}
