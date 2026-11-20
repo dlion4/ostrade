@@ -12,6 +12,8 @@ export type GlobalWorkspaceMode = "paper" | "live";
 interface DashboardContextValue {
   activeAccountId: string; // "all" or specific accountId
   setActiveAccountId: (id: string) => void;
+  fanoutAccountIds: string[];
+  setFanoutAccountIds: (ids: string[]) => void;
   globalMode: GlobalWorkspaceMode;
   setGlobalMode: (mode: GlobalWorkspaceMode) => void;
   killSwitch: KillSwitchMode;
@@ -36,6 +38,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return "paper";
     }
   });
+
+  const [fanoutAccountIds, setFanoutState] = useState<string[]>(() => {
+    try { const saved: unknown = JSON.parse(localStorage.getItem("os-fanout-accounts") ?? "[]"); return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : []; } catch { return []; }
+  });
+  const setFanoutAccountIds = useCallback((ids: string[]) => {
+    setFanoutState(ids);
+    try { localStorage.setItem("os-fanout-accounts", JSON.stringify(ids)); } catch { /* storage optional */ }
+  }, []);
 
   const [killSwitch, setKillSwitch] = useState<KillSwitchMode>("armed");
 
@@ -62,6 +72,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       value={{
         activeAccountId,
         setActiveAccountId,
+        fanoutAccountIds,
+        setFanoutAccountIds,
         globalMode,
         setGlobalMode,
         killSwitch,

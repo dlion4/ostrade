@@ -1,3 +1,4 @@
+import { mappedBrokerSymbol } from "./symbolMappings";
 import {
   channels,
   deskExamples,
@@ -383,7 +384,7 @@ export function buildRoutes(
             options.protection === "none" || !target
               ? 0
               : +(o.entry + (target - o.entry) * scale).toFixed(s?.digits ?? 5);
-          const mapped = s?.brokerSymbols[account.broker] || "";
+          const mapped = mappedBrokerSymbol(s, account) || "";
           const spread = s?.spreads[account.broker] ?? 0;
           const error = halted
             ? "Workspace is flattened. Re-arm the kill switch first."
@@ -562,6 +563,8 @@ export function executeSignals(
           sizeUnit: marketSymbols.find((m) => m.canonical === leg.symbol)
             ?.volumeUnit,
           origin: "Signal",
+          sourceRef: leg.signalId,
+          sourceLabel: leg.signalId,
           channelNote: `${leg.signalId} | TP${leg.targetIndex} | ${o.duration || o.kind}`,
         });
         return {
@@ -642,6 +645,8 @@ export function replayPaperTrigger(
       sl: leg.sl,
       tp: leg.tp,
       origin: "Signal",
+      sourceRef: leg.signalId,
+      sourceLabel: leg.signalId,
       channelNote: `${leg.signalId} | manual paper trigger | ${receipt.ref}`,
       sizeUnit: marketSymbols.find((s) => s.canonical === leg.symbol)
         ?.volumeUnit,
@@ -693,9 +698,7 @@ export async function scheduleDeskSignal(
   if (row.status === "Quarantined" || row.status === "Discarded")
     throw new Error("Resolve this signal before scheduling it.");
   if (
-    !marketSymbols.find((s) => s.canonical === row.order.symbol)?.brokerSymbols[
-      account.broker
-    ]
+    !mappedBrokerSymbol(marketSymbols.find((s) => s.canonical === row.order.symbol), account)
   )
     throw new Error("This instrument is not offered on the selected account.");
   const time = Date.parse(`${at}:00+03:00`);

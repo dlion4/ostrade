@@ -36,7 +36,7 @@ export async function getSchedulerSchedules(filters?: { status?: string; trigger
   if (filters?.account && filters.account !== "all") list = list.filter(s => s.accountId === filters.account);
   if (filters?.search) {
     const q = filters.search.toLowerCase();
-    list = list.filter(s => `${s.name} ${s.symbol} ${s.accountLabel}`.toLowerCase().includes(q));
+    list = list.filter(s => `${s.name} ${s.symbol} ${s.accountLabel} ${s.id} ${s.ref}`.toLowerCase().includes(q));
   }
   return latency(list, 300, 520);
 }
@@ -120,6 +120,16 @@ export interface CreateScheduleInput {
   tags?: string[];
 }
 
+export async function createCopilotScheduleDrafts(inputs: (CreateScheduleInput & { copilot: NonNullable<SchedulerSchedule["copilot"]> })[]) {
+  if (!inputs.length || schedulesStore.length + inputs.length > 50) throw new Error("The schedule batch exceeds the 50-slot workspace limit. No objects were created.");
+  const drafts = inputs.map(input => {
+    const ref = genRef();
+    return { id: `sch-ai-${crypto.randomUUID().slice(0,8)}`, ref, name: input.name || input.symbol, trigger: input.trigger, triggerLabel: input.trigger, triggerDetail: input.triggerDetail, triggerBadge: input.trigger, accountLabel: input.accountLabel, accountId: input.accountId, broker: input.broker ?? "paper", brokerLabel: input.brokerLabel ?? input.accountLabel, symbol: input.symbol, side: input.side, size: input.size, sl: input.sl, tp: input.tp, status: "paused" as const, nextFire: "AI draft · no job", nextFireSort: Number.MAX_SAFE_INTEGER, lastResult: "Paused AI draft · no dispatch", lastResultTone: "neutral" as const, createdAt: new Date().toISOString().slice(0,10), expiry: input.expiry ?? "Never", tags: ["AI", ...(input.tags ?? [])], maxFailures: 3, consecutiveFailures: 0, copilot: input.copilot };
+  });
+  schedulesStore = [...drafts, ...schedulesStore];
+  return latency(drafts);
+}
+
 export async function createSingleSchedule(input: CreateScheduleInput): Promise<{ ok: boolean; schedule?: SchedulerSchedule; message: string }> {
   if (schedulesStore.length >= 50) {
     return latency({ ok: false, message: "Schedule cap reached (50/50). Delete or complete a schedule first." }, 300, 500);
@@ -197,6 +207,7 @@ export async function createBulkSchedules(rows: BulkParsedRow[]): Promise<{ ok: 
 export async function updateScheduleStatus(id: string, status: SchedulerSchedule["status"]): Promise<{ ok: boolean; message: string }> {
   const idx = schedulesStore.findIndex(s => s.id === id);
   if (idx === -1) return latency({ ok: false, message: "Schedule not found." }, 250, 400);
+  if (status === "armed" && schedulesStore[idx].copilot) return latency({ok:false,message:"AI drafts remain paused until live automation is available. No job was created."});
   schedulesStore[idx] = { ...schedulesStore[idx], status, nextFire: status === "paused" ? "Paused" : status === "armed" ? "Resumed" : schedulesStore[idx].nextFire };
   return latency({ ok: true, message: `Schedule ${schedulesStore[idx].ref} is now ${status}.` }, 300, 500);
 }
@@ -204,6 +215,7 @@ export async function updateScheduleStatus(id: string, status: SchedulerSchedule
 export async function runScheduleNow(id: string): Promise<{ ok: boolean; message: string }> {
   const s = schedulesStore.find(x => x.id === id);
   if (!s) return latency({ ok: false, message: "Schedule not found." }, 300, 450);
+  if (s.copilot) return latency({ok:false,message:"This AI schedule is a paused draft. No order was sent."});
   if (s.accountLabel.includes("Paper")) {
     return latency({ ok: true, message: `Simulated run of ${s.ref}: filled on Paper (SIMULATED). Receipt OST-2025-${String(Math.floor(Math.random()*9000)+1000)} logged.` }, 600, 900);
   }

@@ -1,3 +1,8 @@
+import { Route as copilotFileRoute } from "@/routes/dashboard/copilot";
+import { Route as transfersFileRoute } from "@/routes/dashboard/transfers";
+import { Route as withdrawalsFileRoute } from "@/routes/dashboard/withdrawals";
+import { Route as depositsFileRoute } from "@/routes/dashboard/deposits";
+import { Route as accountsFileRoute } from "@/routes/dashboard/accounts";
 import {
   Outlet,
   createHashHistory,
@@ -24,6 +29,7 @@ import { DashTradeTicketPage } from "@/pages/DashTradeTicket";
 import { Route as signalDeskFileRoute } from "@/routes/dashboard/signals";
 import { Route as automationFileRoute } from "@/routes/dashboard/automation";
 import { Route as schedulerFileRoute } from "@/routes/dashboard/scheduler";
+import { Route as recordsFileRoute } from "@/routes/dashboard/records";
 import { Route as positionsFileRoute } from "@/routes/dashboard/positions";
 
 function MarketingLayout() {
@@ -206,42 +212,18 @@ const schedulerMount = { id: "/scheduler", path: "/scheduler", getParentRoute: (
 const dashSchedulerRoute = schedulerFileRoute.update(schedulerMount);
 const positionsMount = { id: "/positions", path: "/positions", getParentRoute: () => dashboardShellRoute, component: positionsFileRoute.options.component };
 const dashPositionsRoute = positionsFileRoute.update(positionsMount);
-const dashRecordsRoute = dashStub(
-  "records",
-  "T-8",
-  "Trade Records & Analytics",
-  "Complete execution journal, channel expectancy breakdown, and CSV export."
-);
-const dashAccountsRoute = dashStub(
-  "accounts",
-  "T-9",
-  "Accounts & Broker Hub",
-  "Connected Paper, Deriv, Exness/MT5, and standby adapter slots."
-);
-const dashDepositsRoute = dashStub(
-  "deposits",
-  "T-10",
-  "Deposits",
-  "Capability-aware API, hosted cashier deep-link, and manual proof rails."
-);
-const dashWithdrawalsRoute = dashStub(
-  "withdrawals",
-  "T-11",
-  "Withdrawals",
-  "Safety-ladder withdrawal requests reconciled into the double-entry ledger."
-);
-const dashTransfersRoute = dashStub(
-  "transfers",
-  "T-12",
-  "Transfers & Double-Entry Ledger",
-  "Internal account transfers and automated debit/credit ledger postings."
-);
-const dashCopilotRoute = dashStub(
-  "copilot",
-  "T-13",
-  "AI Co-Pilot",
-  "Journal-aware trade reviews and approval-gated execution drafts."
-);
+const recordsMount = { id: "/records", path: "/records", getParentRoute: () => dashboardShellRoute, component: recordsFileRoute.options.component };
+const dashRecordsRoute = recordsFileRoute.update(recordsMount);
+const accountsMount = { id: "/accounts", path: "/accounts", getParentRoute: () => dashboardShellRoute, component: accountsFileRoute.options.component };
+const dashAccountsRoute = accountsFileRoute.update(accountsMount);
+const depositsMount = { id: "/deposits", path: "/deposits", getParentRoute: () => dashboardShellRoute, component: depositsFileRoute.options.component };
+const dashDepositsRoute = depositsFileRoute.update(depositsMount);
+const withdrawalsMount = { id: "/withdrawals", path: "/withdrawals", getParentRoute: () => dashboardShellRoute, component: withdrawalsFileRoute.options.component };
+const dashWithdrawalsRoute = withdrawalsFileRoute.update(withdrawalsMount);
+const transfersMount = { id: "/transfers", path: "/transfers", getParentRoute: () => dashboardShellRoute, component: transfersFileRoute.options.component };
+const dashTransfersRoute = transfersFileRoute.update(transfersMount);
+const copilotMount = { id: "/copilot", path: "/copilot", getParentRoute: () => dashboardShellRoute, component: copilotFileRoute.options.component };
+const dashCopilotRoute = copilotFileRoute.update(copilotMount);
 const dashRiskRoute = dashStub(
   "risk",
   "T-14",
@@ -300,10 +282,10 @@ const routeTree = rootRoute.addChildren([
 export function getRouter() {
   const startTarget = import.meta.env.VITE_OS_START === "true";
   const appHistory = typeof window === "undefined" ? createMemoryHistory() : startTarget ? createBrowserHistory() : createHashHistory();
-  // The standalone preview opens the current desk. Explicit hash links retain all pages.
+  // The standalone preview opens the current co-pilot workspace. Explicit hash links retain all pages.
   if (!startTarget && typeof window !== "undefined" && !window.location.hash) {
     const path = window.location.pathname;
-    appHistory.replace(path === "/" || path.endsWith("/index.html") ? "/dashboard/automation" : path);
+    appHistory.replace(path === "/" || path.endsWith("/index.html") ? "/dashboard/copilot" : path);
   }
   return createRouter({ routeTree, history: appHistory, scrollRestoration: true, defaultPreload: "intent" });
 }

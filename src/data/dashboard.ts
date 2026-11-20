@@ -250,6 +250,12 @@ export const tradingAccounts: TradingAccount[] = [
     canModifyStops: true,
     canPartialClose: true,
   },
+  {
+    id: "acc-paper-reserve", broker: "paper", brokerName: "OStrade Paper", label: "Paper Reserve",
+    accountNumber: "OSP-10002", serverOrEndpoint: "Local Simulation Engine", environment: "paper", connected: true,
+    currency: "USD", balance: 3500, equity: 3500, realizedToday: 0, floatingPnl: 0, marginUsedPct: 0,
+    leverage: "1 : 100", todayChangePct: 0, sparkline: Array(8).fill(3500), canModifyStops: true, canPartialClose: true,
+  },
 ];
 
 export type AdapterStatus = "live" | "reconnecting" | "standby";
@@ -476,8 +482,11 @@ export interface OpenPosition {
   tp: number;
   pnl: number;
   pnlPct: number;
-  source: "Signal" | "Scheduled" | "Manual";
+  source: "Signal" | "Scheduled" | "Manual" | "Co-Pilot";
   openedAt: string;
+  openedTimestamp?: string;
+  sourceLabel?: string;
+  sourceRef?: string;
 }
 
 export const initialOpenPositions: OpenPosition[] = [
@@ -812,6 +821,7 @@ export interface RuleAutomationConfig {
   updatedAt: string;
 }
 export interface SignalRule {
+  copilot?: { source: "AI"; templateId?: string; intent: string };
   id: string;
   name: string;
   source: "Telegram" | "TradingView" | "CopyFactory" | "Email" | "Paste";

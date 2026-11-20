@@ -1,3 +1,4 @@
+import { mappedBrokerSymbol } from "./symbolMappings";
 // T-5 service layer. Every read/write goes through these future REST-shaped calls.
 import {
   automationConfigs,
@@ -34,6 +35,7 @@ export type { AutomationAudit, AutomationSignal, AuditDecision, RuleAutomationCo
 
 export interface RuleDraft extends Omit<RuleAutomationConfig, "updatedAt" | "lastDryRunAt" | "lastDryRunSummary"> {
   id?: string;
+  copilot?: SignalRule["copilot"];
   name: string;
   updatedAt?: string;
   lastDryRunAt?: string;
@@ -276,6 +278,7 @@ export async function saveAutomationRule(draft: RuleDraft, activate: boolean): P
     accountId: account,
     accountLabel: account ? (accounts.find((a) => a.id === account)?.label ?? "Signal Desk") : "Signal Desk",
     enabled: activate,
+    copilot: draft.copilot,
     automation: configFromDraft({ ...next, status: activate ? "active" : "draft" }),
   });
   logEvent({
@@ -370,7 +373,7 @@ export function previewDraft(
 
     const symbol = marketSymbols.find((s) => s.canonical === signal.symbol);
     const orders: PreviewOrder[] = selectedAccounts.flatMap((account) => {
-      const brokerSymbol = symbol?.brokerSymbols[account.broker];
+      const brokerSymbol = mappedBrokerSymbol(symbol, account);
       if (!symbol || !brokerSymbol) return [];
       const slDistanceRaw = Math.abs(signal.entry - signal.sl);
       const slDistance = draft.stopMode === "scaled" ? slDistanceRaw * draft.stopScalePct / 100 : draft.stopMode === "defaults" ? signal.entry * 0.0075 : slDistanceRaw;

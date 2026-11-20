@@ -1,3 +1,5 @@
+import { mappedBrokerSymbol } from "./symbolMappings";
+import { marketSymbols } from "@/data/markets";
 // Dashboard service layer (T-1..T-16).
 // TanStack Query consumes ONLY these functions — pages never import src/data directly.
 // Paper-account actions simulate locally end-to-end; broker-API actions resolve to
@@ -39,6 +41,7 @@ import {
   type TradingAccount,
 } from "@/data/dashboard";
 import { latency } from "./_latency";
+import { bookPaperClosure } from "./records";
 
 export { DASH_MAX_SCHEDULES };
 export type {
@@ -66,6 +69,13 @@ export type {
 
 // Mutable in-memory stores for realistic local session state across queries
 let accountsStore: TradingAccount[] = structuredClone(tradingAccounts);
+const PAPER_ACCOUNTS_KEY = "os-local-paper-accounts";
+try {
+  const saved = JSON.parse(localStorage.getItem(PAPER_ACCOUNTS_KEY) ?? "[]") as TradingAccount[];
+  if (Array.isArray(saved)) accountsStore.push(...saved.filter((a) => a.broker === "paper" && a.id?.startsWith("acc-paper-local-")));
+} catch { /* browser storage optional */ }
+const openingSimulatorBalances = new Map(accountsStore.filter(a => !tradingAccounts.some(seed=>seed.id===a.id)).map(a => [a.id,a.balance]));
+export const getPaperOpeningBalance = (id:string) => openingSimulatorBalances.get(id);
 let positionsStore: OpenPosition[] = structuredClone(initialOpenPositions);
 let schedulesStore: DashboardSchedule[] = structuredClone(initialSchedules);
 let usedSlotsCount = 18; // matches blueprint "18 / 50 slots"
@@ -75,6 +85,8 @@ let alertsStore: DashboardAlert[] = structuredClone(initialAlerts);
 let recordsStore: JournalRecord[] = structuredClone(initialRecords);
 let eventsStore: EconomicEvent[] = structuredClone(initialEconomicEvents);
 let refCounter = 148;
+let killSwitchStore: KillSwitchMode = "armed";
+export const getLocalKillSwitch = () => killSwitchStore;
 
 function nextOrderRef(): string {
   refCounter += 1;
@@ -89,6 +101,63 @@ function eatTimestamp(): string {
 
 export const getAccounts = (): Promise<TradingAccount[]> =>
   latency(accountsStore, 300, 520);
+
+export async function createPaperAccount(input: { label: string; startingBalance: number }) {
+  const label = input.label.trim();
+  if (label.length < 2 || label.length > 40 || accountsStore.some((a) => a.label.toLowerCase() === label.toLowerCase())) throw new Error("Choose a unique account label between 2 and 40 characters.");
+  if (!Number.isFinite(input.startingBalance) || input.startingBalance < 100 || input.startingBalance > 1_000_000) throw new Error("Starting balance must be between $100 and $1,000,000.");
+  const balance = Math.round(input.startingBalance * 100) / 100;
+  const suffix = globalThis.crypto.randomUUID().slice(0, 8);
+  const account: TradingAccount = { ...tradingAccounts[0], id: `acc-paper-local-${suffix}`, label, accountNumber: `OSP-${suffix.toUpperCase()}`, balance, equity: balance, realizedToday: 0, floatingPnl: 0, marginUsedPct: 0, todayChangePct: 0, sparkline: Array(8).fill(balance) };
+  accountsStore.push(account);
+  openingSimulatorBalances.set(account.id, balance);
+  try {
+    const saved = JSON.parse(localStorage.getItem(PAPER_ACCOUNTS_KEY) ?? "[]");
+    localStorage.setItem(PAPER_ACCOUNTS_KEY, JSON.stringify([...saved, account]));
+  } catch { /* session fallback */ }
+  return latency(account);
+}
+
+/** Session-only funding, kept separate from realized trading P&L. */
+export function applySimulatedFunding(accountId: string, amount: number) {
+  const account = accountsStore.find((a) => a.id === accountId && a.broker === "paper" && a.environment === "paper");
+  if (!account || !Number.isFinite(amount) || amount <= 0 || amount > 100000) throw new Error("Only valid local Paper top-ups can update a balance.");
+  account.balance = Math.round((account.balance + amount) * 100) / 100;
+  account.equity = Math.round((account.equity + amount) * 100) / 100;
+  return account.balance;
+}
+
+export const WITHDRAWAL_MARGIN_GUARD = 0.65;
+export function calculateWithdrawable(account: TradingAccount) {
+  const margin = Math.max(0, account.equity * account.marginUsedPct / 100);
+  const free = Math.max(0, Math.min(account.balance, account.equity - Math.max(1, margin / WITHDRAWAL_MARGIN_GUARD)));
+  return { margin, available: Math.floor(free * 100 + 1e-7) / 100 };
+}
+
+/** Commit only a locally simulated debit; re-check live in-memory equity and margin. */
+export function applySimulatedWithdrawal(accountId: string, amount: number) {
+  const account = accountsStore.find((a) => a.id === accountId && a.broker === "paper" && a.environment === "paper");
+  if (!account || !Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) / 100 !== amount) throw new Error("Only a valid Paper withdrawal can debit the simulator.");
+  const { available, margin } = calculateWithdrawable(account);
+  if (amount > available) throw new Error("The current Paper balance or margin guard no longer permits this amount.");
+  account.balance = Math.round((account.balance - amount) * 100) / 100;
+  account.equity = Math.round((account.equity - amount) * 100) / 100;
+  account.marginUsedPct = margin / account.equity * 100;
+  return account.balance;
+}
+
+export function applyPaperTransfer(fromId: string, toId: string, amount: number) {
+  const from = accountsStore.find(a => a.id === fromId && a.broker === "paper" && a.environment === "paper");
+  const to = accountsStore.find(a => a.id === toId && a.broker === "paper" && a.environment === "paper");
+  if (!from || !to || from === to || !Number.isFinite(amount) || amount < 1 || Math.round(amount * 100) / 100 !== amount) throw new Error("Choose two distinct Paper accounts and a valid amount.");
+  if (amount > calculateWithdrawable(from).available) throw new Error("The current Paper balance or margin guard no longer permits this transfer.");
+  const destinationMargin = to.equity * to.marginUsedPct / 100;
+  const sourceBalance = applySimulatedWithdrawal(fromId, amount);
+  to.balance = Math.round((to.balance + amount) * 100) / 100;
+  to.equity = Math.round((to.equity + amount) * 100) / 100;
+  to.marginUsedPct = destinationMargin / to.equity * 100;
+  return { sourceBalance, destinationBalance: to.balance };
+}
 
 export const getAdapters = (): Promise<AdapterHealth[]> =>
   latency(adapterSnapshots, 300, 480);
@@ -197,8 +266,10 @@ export interface PlaceDashboardOrderInput {
   entry: number;
   sl: number;
   tp: number;
-  origin?: "Signal" | "Manual";
+  origin?: "Signal" | "Manual" | "Co-Pilot";
   channelNote?: string;
+  sourceLabel?: string;
+  sourceRef?: string;
   sizeUnit?: OpenPosition["sizeUnit"];
 }
 
@@ -212,8 +283,8 @@ export interface DashboardMutationOutcome {
 export async function placeDashboardOrder(
   input: PlaceDashboardOrderInput
 ): Promise<DashboardMutationOutcome> {
-  const acc =
-    accountsStore.find((a) => a.id === input.accountId) ?? accountsStore[0];
+  const acc = accountsStore.find((a) => a.id === input.accountId);
+  if (!acc) return latency({ mode: "blocked", ref: "—", title: "Account unavailable", detail: "Select an existing account before submitting an order." });
 
   // Paper accounts simulate locally end-to-end
   if (acc.environment === "paper") {
@@ -227,7 +298,7 @@ export async function placeDashboardOrder(
       brokerName: acc.brokerName,
       environment: acc.environment,
       symbol: input.symbol.toUpperCase(),
-      brokerSymbol: input.symbol.toUpperCase(),
+      brokerSymbol: mappedBrokerSymbol(marketSymbols.find((s) => s.canonical === input.symbol.toUpperCase()), acc) ?? input.symbol.toUpperCase(),
       side: input.side,
       size: input.size,
       sizeUnit: input.sizeUnit ?? (acc.broker === "alpaca" ? "shares" : "lots"),
@@ -238,6 +309,9 @@ export async function placeDashboardOrder(
       pnl: 0,
       pnlPct: 0,
       source: input.origin ?? "Signal",
+      sourceLabel: input.sourceLabel,
+      sourceRef: input.sourceRef,
+      openedTimestamp: new Date().toISOString(),
       openedAt: `${eatTimestamp()} EAT`,
     };
     positionsStore = [newPos, ...positionsStore];
@@ -313,6 +387,7 @@ export async function closePosition(
   }
 
   if (pos.environment === "paper") {
+    bookPaperClosure(pos);
     positionsStore = positionsStore.filter((p) => p.id !== positionId);
     const acc = accountsStore.find((a) => a.id === pos.accountId);
     if (acc) {
@@ -448,6 +523,7 @@ export async function partialClosePosition(
     const sign = realizedPnl >= 0 ? "+" : "−";
     const formatted = `${sign}$${Math.abs(realizedPnl).toFixed(2)}`;
     const ref = nextOrderRef();
+    bookPaperClosure(pos, { ref, size: volumeToClose, pnl: realizedPnl });
     recordsStore = [
       {
         id: `rec-${Date.now()}`,
@@ -514,6 +590,7 @@ export async function reversePosition(
       pnl: 0,
       pnlPct: 0,
       source: "Manual",
+      openedTimestamp: new Date().toISOString(),
       openedAt: `${eatTimestamp()} EAT`,
     };
     positionsStore = [newPos, ...positionsStore];
@@ -579,7 +656,7 @@ export async function toggleSignalRule(
   ruleId: string
 ): Promise<{ id: string; enabled: boolean }> {
   const rule = rulesStore.find((r) => r.id === ruleId);
-  if (rule) rule.enabled = !rule.enabled;
+  if (rule && !rule.copilot) rule.enabled = !rule.enabled;
   return latency({ id: ruleId, enabled: rule?.enabled ?? false }, 260, 450);
 }
 
@@ -595,8 +672,10 @@ export async function saveSignalRule(input: SignalRuleUpsert): Promise<SignalRul
     throw new Error(`The ${MAX_SIGNAL_RULES}-rule limit has been reached. Delete or archive a rule first.`);
   }
   const current = existingIndex >= 0 ? rulesStore[existingIndex] : undefined;
+  if (current?.copilot && input.enabled) throw new Error("AI preview rules remain disabled. No automation was activated.");
   const rule: SignalRule = {
     ...input,
+    copilot: current?.copilot ?? input.copilot,
     id: current?.id ?? `rul-${crypto.randomUUID().slice(0, 8)}`,
     firedToday: current?.firedToday ?? 0,
     lastDecision: current?.lastDecision ?? "SKIPPED",
@@ -611,6 +690,7 @@ export async function saveSignalRule(input: SignalRuleUpsert): Promise<SignalRul
 export async function setSignalRuleEnabled(id: string, enabled: boolean): Promise<SignalRule> {
   const rule = rulesStore.find((r) => r.id === id);
   if (!rule) throw new Error("Rule not found.");
+  if (enabled && rule.copilot) throw new Error("AI preview rules remain disabled. No automation was activated.");
   rule.enabled = enabled;
   rule.automation = rule.automation ? { ...rule.automation, status: enabled ? "active" : "paused", updatedAt: "Today 16:42" } : rule.automation;
   return latency(rule, 280, 460);
@@ -832,6 +912,7 @@ export async function createSchedule(
 export async function applyKillSwitch(
   nextState: KillSwitchMode
 ): Promise<DashboardMutationOutcome> {
+  killSwitchStore = nextState;
   if (nextState === "paused") {
     rulesStore = rulesStore.map((r) => ({ ...r, enabled: false }));
     schedulesStore = schedulesStore.map((s) => ({ ...s, active: false }));
@@ -867,6 +948,7 @@ export async function applyKillSwitch(
     const paperOpen = positionsStore.filter((p) => p.environment === "paper");
     const nonPaperCount = positionsStore.filter((p) => p.environment !== "paper").length;
     paperOpen.forEach((pos) => {
+      bookPaperClosure(pos);
       const acc = accountsStore.find((a) => a.id === pos.accountId);
       if (acc) {
         acc.balance = Math.round((acc.balance + pos.pnl) * 100) / 100;
@@ -904,7 +986,7 @@ export async function applyKillSwitch(
   }
 
   // Re-arm
-  rulesStore = rulesStore.map((r, idx) => ({ ...r, enabled: idx !== 6 }));
+  rulesStore = rulesStore.map((r, idx) => ({ ...r, enabled: !r.copilot && idx !== 6 }));
   schedulesStore = schedulesStore.map((s, idx) => ({ ...s, active: idx !== 10 }));
   return latency({
     mode: "simulated",

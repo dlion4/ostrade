@@ -10,24 +10,50 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DashboardAccountsRouteImport } from './routes/dashboard/accounts'
 import { Route as DashboardAutomationRouteImport } from './routes/dashboard/automation'
+import { Route as DashboardCopilotRouteImport } from './routes/dashboard/copilot'
+import { Route as DashboardDepositsRouteImport } from './routes/dashboard/deposits'
 import { Route as DashboardPositionsRouteImport } from './routes/dashboard/positions'
+import { Route as DashboardRecordsRouteImport } from './routes/dashboard/records'
 import { Route as DashboardSchedulerRouteImport } from './routes/dashboard/scheduler'
 import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals'
+import { Route as DashboardTransfersRouteImport } from './routes/dashboard/transfers'
+import { Route as DashboardWithdrawalsRouteImport } from './routes/dashboard/withdrawals'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardAccountsRoute = DashboardAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAutomationRoute = DashboardAutomationRouteImport.update({
   id: '/automation',
   path: '/automation',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCopilotRoute = DashboardCopilotRouteImport.update({
+  id: '/copilot',
+  path: '/copilot',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardDepositsRoute = DashboardDepositsRouteImport.update({
+  id: '/deposits',
+  path: '/deposits',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardPositionsRoute = DashboardPositionsRouteImport.update({
   id: '/positions',
   path: '/positions',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardRecordsRoute = DashboardRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardSchedulerRoute = DashboardSchedulerRouteImport.update({
@@ -40,51 +66,97 @@ const DashboardSignalsRoute = DashboardSignalsRouteImport.update({
   path: '/signals',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardTransfersRoute = DashboardTransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardWithdrawalsRoute = DashboardWithdrawalsRouteImport.update({
+  id: '/withdrawals',
+  path: '/withdrawals',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/accounts': typeof DashboardAccountsRoute
   '/dashboard/automation': typeof DashboardAutomationRoute
+  '/dashboard/copilot': typeof DashboardCopilotRoute
+  '/dashboard/deposits': typeof DashboardDepositsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
+  '/dashboard/records': typeof DashboardRecordsRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/transfers': typeof DashboardTransfersRoute
+  '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/accounts': typeof DashboardAccountsRoute
   '/dashboard/automation': typeof DashboardAutomationRoute
+  '/dashboard/copilot': typeof DashboardCopilotRoute
+  '/dashboard/deposits': typeof DashboardDepositsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
+  '/dashboard/records': typeof DashboardRecordsRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/transfers': typeof DashboardTransfersRoute
+  '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/accounts': typeof DashboardAccountsRoute
   '/dashboard/automation': typeof DashboardAutomationRoute
+  '/dashboard/copilot': typeof DashboardCopilotRoute
+  '/dashboard/deposits': typeof DashboardDepositsRoute
   '/dashboard/positions': typeof DashboardPositionsRoute
+  '/dashboard/records': typeof DashboardRecordsRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/transfers': typeof DashboardTransfersRoute
+  '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/dashboard'
+    | '/dashboard/accounts'
     | '/dashboard/automation'
+    | '/dashboard/copilot'
+    | '/dashboard/deposits'
     | '/dashboard/positions'
+    | '/dashboard/records'
     | '/dashboard/scheduler'
     | '/dashboard/signals'
+    | '/dashboard/transfers'
+    | '/dashboard/withdrawals'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dashboard'
+    | '/dashboard/accounts'
     | '/dashboard/automation'
+    | '/dashboard/copilot'
+    | '/dashboard/deposits'
     | '/dashboard/positions'
+    | '/dashboard/records'
     | '/dashboard/scheduler'
     | '/dashboard/signals'
+    | '/dashboard/transfers'
+    | '/dashboard/withdrawals'
   id:
     | '__root__'
     | '/dashboard'
+    | '/dashboard/accounts'
     | '/dashboard/automation'
+    | '/dashboard/copilot'
+    | '/dashboard/deposits'
     | '/dashboard/positions'
+    | '/dashboard/records'
     | '/dashboard/scheduler'
     | '/dashboard/signals'
+    | '/dashboard/transfers'
+    | '/dashboard/withdrawals'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,6 +172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/accounts': {
+      id: '/dashboard/accounts'
+      path: '/accounts'
+      fullPath: '/dashboard/accounts'
+      preLoaderRoute: typeof DashboardAccountsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/automation': {
       id: '/dashboard/automation'
       path: '/automation'
@@ -107,11 +186,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAutomationRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/copilot': {
+      id: '/dashboard/copilot'
+      path: '/copilot'
+      fullPath: '/dashboard/copilot'
+      preLoaderRoute: typeof DashboardCopilotRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/deposits': {
+      id: '/dashboard/deposits'
+      path: '/deposits'
+      fullPath: '/dashboard/deposits'
+      preLoaderRoute: typeof DashboardDepositsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/positions': {
       id: '/dashboard/positions'
       path: '/positions'
       fullPath: '/dashboard/positions'
       preLoaderRoute: typeof DashboardPositionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/records': {
+      id: '/dashboard/records'
+      path: '/records'
+      fullPath: '/dashboard/records'
+      preLoaderRoute: typeof DashboardRecordsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/scheduler': {
@@ -128,21 +228,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSignalsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/transfers': {
+      id: '/dashboard/transfers'
+      path: '/transfers'
+      fullPath: '/dashboard/transfers'
+      preLoaderRoute: typeof DashboardTransfersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/withdrawals': {
+      id: '/dashboard/withdrawals'
+      path: '/withdrawals'
+      fullPath: '/dashboard/withdrawals'
+      preLoaderRoute: typeof DashboardWithdrawalsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
+  DashboardAccountsRoute: typeof DashboardAccountsRoute
   DashboardAutomationRoute: typeof DashboardAutomationRoute
+  DashboardCopilotRoute: typeof DashboardCopilotRoute
+  DashboardDepositsRoute: typeof DashboardDepositsRoute
   DashboardPositionsRoute: typeof DashboardPositionsRoute
+  DashboardRecordsRoute: typeof DashboardRecordsRoute
   DashboardSchedulerRoute: typeof DashboardSchedulerRoute
   DashboardSignalsRoute: typeof DashboardSignalsRoute
+  DashboardTransfersRoute: typeof DashboardTransfersRoute
+  DashboardWithdrawalsRoute: typeof DashboardWithdrawalsRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAccountsRoute: DashboardAccountsRoute,
   DashboardAutomationRoute: DashboardAutomationRoute,
+  DashboardCopilotRoute: DashboardCopilotRoute,
+  DashboardDepositsRoute: DashboardDepositsRoute,
   DashboardPositionsRoute: DashboardPositionsRoute,
+  DashboardRecordsRoute: DashboardRecordsRoute,
   DashboardSchedulerRoute: DashboardSchedulerRoute,
   DashboardSignalsRoute: DashboardSignalsRoute,
+  DashboardTransfersRoute: DashboardTransfersRoute,
+  DashboardWithdrawalsRoute: DashboardWithdrawalsRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

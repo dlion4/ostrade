@@ -1,3 +1,4 @@
+import { mappedBrokerSymbol } from "@/services/markets";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -286,7 +287,7 @@ function ConfirmTicketModal({
           {legs.map((leg) => {
             const acc = accountsById.get(leg.accountId);
             if (!acc) return null;
-            const bSym = sym.brokerSymbols[acc.broker];
+            const bSym = mappedBrokerSymbol(sym, acc);
             return (
               <div key={leg.accountId} className="os-confirm-leg">
                 <div>
@@ -550,7 +551,7 @@ export function DashTradeTicketPage() {
   usePageStyle("dash-trade-ticket", css);
   const toast = useToast();
   const qc = useQueryClient();
-  const { activeAccountId, globalMode, killSwitch } = useDashboardContext();
+  const { activeAccountId, fanoutAccountIds, globalMode, killSwitch } = useDashboardContext();
 
   const accountsQ = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const universeQ = useQuery({ queryKey: ["market-universe"], queryFn: getMarketUniverse });
@@ -625,6 +626,8 @@ export function DashTradeTicketPage() {
         `Prefilled from ${draft.source}: ${draft.side} ${draft.canonical} @ ${draft.price}`
       );
       toast(`Ticket prefilled from ${draft.source}: ${draft.canonical}`);
+    } else if (fanoutAccountIds.length) {
+      setSelectedAccIds(fanoutAccountIds);
     } else if (activeAccountId !== "all") {
       setSelectedAccIds([activeAccountId]);
     }
@@ -754,7 +757,7 @@ export function DashTradeTicketPage() {
   const riskRows = useMemo(() => {
     return legs.map((leg) => {
       const acc = accountsById.get(leg.accountId)!;
-      const bSym = activeSym?.brokerSymbols[acc.broker];
+      const bSym = mappedBrokerSymbol(activeSym, acc);
       const reqMargin = estimateRequiredMargin(activeSym, acc, leg.size);
       const marginPctDelta =
         acc.equity > 0 ? (reqMargin / acc.equity) * 100 : 0;
@@ -1230,7 +1233,7 @@ export function DashTradeTicketPage() {
                     </span>
                     <div className="os-map-rows">
                       {selectedAccounts.map((acc) => {
-                        const bSym = activeSym.brokerSymbols[acc.broker];
+                        const bSym = mappedBrokerSymbol(activeSym, acc);
                         return (
                           <div
                             key={acc.id}

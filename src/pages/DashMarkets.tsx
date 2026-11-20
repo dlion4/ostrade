@@ -80,6 +80,7 @@ import {
   matchesSymbolQuery,
   removePriceAlert,
   resolveSymbol,
+  mappedBrokerSymbol,
   resolvedCanonical,
   saveWatchlist,
   stageTicketDraft,
@@ -568,7 +569,7 @@ function ChartSection({ model }: { model: MarketsModel }) {
   const overlay = (() => {
     if (!sym) return null;
     if (activeAcc && activeAcc.broker !== "paper") {
-      const bs = sym.brokerSymbols[activeAcc.broker];
+      const bs = mappedBrokerSymbol(sym, activeAcc);
       return bs
         ? { tone: "info", text: `Chart data source is the OStrade composite snapshot. ${activeAcc.label} quotes this as ${bs} with a ${sym.spreads[activeAcc.broker]} ${sym.spreadUnit} spread — fills follow the broker's feed.` }
         : { tone: "warn", text: `${activeAcc.label} (${activeAcc.brokerName}) does not list ${sym.canonical}. The chart is informational; a ticket would be blocked for this account.` };
@@ -866,7 +867,7 @@ function SymbolDrawer({ canonical, model, onClose }: { canonical: string; model:
                   <li key={a.id} className={s.spreads[a.broker] === bestSpread ? "is-best" : ""}>
                     <div><BrokerBadge broker={a.broker} label={a.brokerName} /> <strong>{a.label}</strong> <EnvPill env={a.environment} /></div>
                     <div className="text-end">
-                      <span className="os-mono d-block">{s.brokerSymbols[a.broker]}</span>
+                      <span className="os-mono d-block">{mappedBrokerSymbol(s, a)}</span>
                       <small className="os-mono">{s.spreads[a.broker]} {s.spreadUnit}{s.spreads[a.broker] === bestSpread ? " · tightest" : ""}</small>
                     </div>
                   </li>
@@ -1225,7 +1226,7 @@ export function DashMarketsPage() {
   const toast = useToast();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { activeAccountId, setActiveAccountId } = useDashboardContext();
+  const { activeAccountId, fanoutAccountIds, setActiveAccountId, setFanoutAccountIds } = useDashboardContext();
 
   const accountsQ = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const universeQ = useQuery({ queryKey: ["market-universe"], queryFn: getMarketUniverse });
@@ -1250,15 +1251,18 @@ export function DashMarketsPage() {
   // Sync page context with the global account context (T-1/T-3/T-4 share it)
   useEffect(() => {
     if (!connected.length) return;
-    if (activeAccountId === "all" || !connected.some((a) => a.id === activeAccountId)) setSelectedIdsState(connected.map((a) => a.id));
+    const targets = fanoutAccountIds.filter((id) => connected.some((a) => a.id === id));
+    if (targets.length) setSelectedIdsState(targets);
+    else if (activeAccountId === "all" || !connected.some((a) => a.id === activeAccountId)) setSelectedIdsState(connected.map((a) => a.id));
     else setSelectedIdsState([activeAccountId]);
-  }, [activeAccountId, connected]);
+  }, [activeAccountId, fanoutAccountIds, connected]);
 
   useEffect(() => { if (watchQ.data) setWatchlistState(watchQ.data); }, [watchQ.data]);
 
   const setSelectedIds = (ids: string[]) => {
     setSelectedIdsState(ids);
     setActiveAccountId(ids.length === 1 ? ids[0] : "all");
+    setFanoutAccountIds(ids);
   };
 
   const saveMut = useMutation({ mutationFn: (list: string[]) => saveWatchlist(list), onSuccess: (list) => qc.setQueryData(["watchlist"], list) });

@@ -1,3 +1,4 @@
+import { useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -28,6 +29,7 @@ function StatusBadge({ s }: { s: SchedulerSchedule["status"] }) {
 }
 
 export function DashSchedulerPage() {
+  const { recordSource } = useSearch({ from: "/dashboard/scheduler" });
   usePageStyle("dash-scheduler", css);
   const toast = useToast();
   const qc = useQueryClient();
@@ -37,7 +39,7 @@ export function DashSchedulerPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTrigger, setFilterTrigger] = useState("all");
   const [filterAccount, setFilterAccount] = useState("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(recordSource ?? "");
   const [selected, setSelected] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"nextFire"|"name">("nextFire");
 
@@ -45,7 +47,7 @@ export function DashSchedulerPage() {
   const [editing, setEditing] = useState<SchedulerSchedule|null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [timelineHover, setTimelineHover] = useState<string|null>(null);
-  const [logScheduleId, setLogScheduleId] = useState<string>("sch-001");
+  const [logScheduleId, setLogScheduleId] = useState<string>(recordSource ?? "sch-001");
 
   // Builder form state
   const [form, setForm] = useState<any>({
@@ -63,6 +65,8 @@ export function DashSchedulerPage() {
   const marketsQ = useQuery({ queryKey: ["market-universe"], queryFn: getMarketUniverse });
   const logQ = useQuery({ queryKey: ["scheduler-log", logScheduleId], queryFn: () => getScheduleExecutions(logScheduleId) });
   const allExecQ = useQuery({ queryKey: ["scheduler-all-exec"], queryFn: getAllExecutions });
+
+  useEffect(() => { if (recordSource) document.getElementById("sched-table")?.scrollIntoView(); }, [recordSource]);
 
   const schedules = schedulesQ.data ?? [];
   const sortedSchedules = useMemo(()=> {

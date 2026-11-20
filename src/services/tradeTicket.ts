@@ -1,3 +1,4 @@
+import { mappedBrokerSymbol } from "./symbolMappings";
 // T-3 Trade Ticket service layer.
 // TanStack Query consumes ONLY these functions — pages never import src/data directly.
 import {
@@ -206,7 +207,7 @@ export async function submitFanoutTicket(
     );
     if (!acc) continue;
 
-    const brokerSym = sym?.brokerSymbols[acc.broker];
+    const brokerSym = mappedBrokerSymbol(sym, acc);
     if (!sym || !brokerSym) {
       blockedCount += 1;
       receipts.push({
