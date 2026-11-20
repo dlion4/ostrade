@@ -1,3 +1,4 @@
+import { useSearch } from "@tanstack/react-router";
 import { useCallback,useEffect,useState,type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Bot, CheckCircle2, ClipboardCheck, Fingerprint, GitBranch, Layers3, LockKeyhole, Radar, ShieldCheck, Sparkles, Sun, Terminal, Workflow } from "lucide-react";
@@ -28,7 +29,9 @@ export function DashCopilotPage(){
  const {activeAccountId}=useDashboardContext();
  const account=useQuery({queryKey:["copilot-accounts"],queryFn:getCopilotAccounts});
  const proposals=useQuery({queryKey:["copilot-drafts"],queryFn:getCopilotDrafts});
+ const {proposal}=useSearch({from:"/dashboard/copilot"});
  const [current,setCurrent]=useState<Key>("overview"),[chosen,setChosen]=useState<string>(),[preset,setPreset]=useState<{text:string;id:number}>();
+ useEffect(()=>{if(proposal)setChosen(proposal);},[proposal]);
  const open=useCallback((id:string)=>setChosen(id),[]);
  const selected=proposals.data?.find(d=>d.id===chosen);
  useEffect(()=>{const old=document.title;document.title="AI Co-Pilot | OStrade";return()=>{document.title=old;};},[]);
@@ -47,6 +50,6 @@ export function DashCopilotPage(){
  <Section id="policy" copy="Choose when to ask, allow a scoped Paper action, or block an action class."><Policy/></Section>
  <Section id="audit" copy="Trace decisions and tool inputs, or export the filtered redacted log."><Activity/></Section>
  <footer className="os-ai-footer"><span><Sparkles size={14}/> Session-only assistant · accepted mappings persist locally</span><button className="os-ai-link" onClick={()=>document.getElementById("dash-main")?.scrollIntoView()}>Back to top <ArrowUpRight size={14}/></button></footer>
- {selected&&<ProposalDialog key={selected.id} draft={selected} close={()=>setChosen(undefined)}/>}{chosen&&!selected&&<div className="os-ai-floating" role="status"><Busy>Opening proposal…</Busy><button className="btn os-ai-btn" onClick={()=>setChosen(undefined)}>Cancel</button></div>}
+ {selected&&<ProposalDialog key={selected.id} draft={selected} close={()=>setChosen(undefined)}/>}{chosen&&!selected&&<div className="os-ai-floating" role="status">{proposals.isPending?<Busy>Opening proposal…</Busy>:<Note>Proposal unavailable in this session.</Note>}<button className="btn os-ai-btn" onClick={()=>setChosen(undefined)}>Cancel</button></div>}
  </main>;
 }

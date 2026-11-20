@@ -1,3 +1,4 @@
+import { publishNotice } from "./notificationStore";
 import { readyMessage } from "@/data/accounts";
 import { tradingAccounts, type TradingAccount } from "@/data/dashboard";
 import { marketSymbols, symbolAliases } from "@/data/markets";
@@ -24,7 +25,9 @@ const log=(row:Omit<CopilotAudit,"id"|"at"|"source">)=>activity.unshift({...row,
 function totp(code?:string){if(code!=="123456")throw new Error("Use example TOTP 123456. Do not enter a real code.");}
 function createDraft(account:TradingAccount, data:Omit<CopilotDraft,"id"|"createdAt"|"accountId"|"accountLabel"|"broker"|"status"|"receipt">){
   const value:CopilotDraft={...data,id:uid("AI"),createdAt:now(),accountId:account.id,accountLabel:account.label,broker:account.broker,status:"Pending",receipt:[]};
-  drafts.unshift(value);return value;
+  drafts.unshift(value);
+  if(value.source!=="Sample")publishNotice({event:"copilot.proposal",id:`proposal:${value.id}`,title:`Proposal ready · ${value.title}`,body:'A local proposal is waiting for operator review. Nothing executed.',accountLabel:value.accountLabel,ref:value.id});
+  return value;
 }
 async function ensureSamples(){
   if(seeded)return;

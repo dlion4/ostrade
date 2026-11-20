@@ -1,3 +1,4 @@
+import { getBrokerDefaults } from "@/services/dashboard";
 import { mappedBrokerSymbol } from "@/services/markets";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
@@ -561,6 +562,7 @@ export function DashTradeTicketPage() {
   const { activeAccountId, fanoutAccountIds, globalMode, killSwitch } = useDashboardContext();
 
   const accountsQ = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
+  const defaultsQ = useQuery({queryKey:["broker-defaults"],queryFn:getBrokerDefaults});
   const universeQ = useQuery({ queryKey: ["market-universe"], queryFn: getMarketUniverse });
   const ticketsQ = useQuery({ queryKey: ["recent-tickets"], queryFn: getRecentTickets });
   const capsQ = useQuery({ queryKey: ["ticket-capabilities"], queryFn: getTicketCapabilities });
@@ -622,6 +624,14 @@ export function DashTradeTicketPage() {
       document.title = prev;
     };
   }, []);
+
+  useEffect(() => {
+    if (!defaultsQ.data) return;
+    setTimeInForce(tif => tif === 'GTC' ? defaultsQ.data.tif : tif);
+    if (!fanoutAccountIds.length && activeAccountId === 'all' && defaultsQ.data.manual) {
+      setSelectedAccIds(ids => ids.length === 2 && ids[0] === 'acc-paper-main' && ids[1] === 'acc-exness-trial' ? [defaultsQ.data.manual] : ids);
+    }
+  }, [defaultsQ.data, activeAccountId, fanoutAccountIds]);
 
   // Hydrate draft handed off from T-2 Markets (if any) or sync with single active account
   useEffect(() => {

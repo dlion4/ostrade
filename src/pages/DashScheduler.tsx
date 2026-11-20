@@ -8,7 +8,7 @@ import {
 import { useToast } from "@/components/Toast";
 import { usePageStyle } from "@/hooks/usePageStyle";
 import { BrokerBadge } from "@/components/DashboardShell";
-import { getAccounts } from "@/services/dashboard";
+import { getAccounts, getBrokerDefaults } from "@/services/dashboard";
 import { getMarketUniverse } from "@/services/markets";
 import {
   getAllExecutions, getCalendarDays, getSchedulerKpis, getSchedulerSchedules, getScheduleExecutions, getTimelineEvents,
@@ -61,6 +61,7 @@ export function DashSchedulerPage() {
   const schedulesQ = useQuery({ queryKey: ["scheduler-list", filterStatus, filterTrigger, filterAccount, search], queryFn: () => getSchedulerSchedules({ status: filterStatus, trigger: filterTrigger, account: filterAccount, search }) });
   const calQ = useQuery({ queryKey: ["scheduler-calendar"], queryFn: getCalendarDays });
   const timelineQ = useQuery({ queryKey: ["scheduler-timeline"], queryFn: getTimelineEvents });
+  const defaultsQ = useQuery({queryKey:["broker-defaults"],queryFn:getBrokerDefaults});
   const accountsQ = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const marketsQ = useQuery({ queryKey: ["market-universe"], queryFn: getMarketUniverse });
   const logQ = useQuery({ queryKey: ["scheduler-log", logScheduleId], queryFn: () => getScheduleExecutions(logScheduleId) });
@@ -119,17 +120,18 @@ export function DashSchedulerPage() {
   };
   const openCreate = ()=>{
     setEditing(null);
-    setForm((f:any)=> ({...f, name:"", symbol:"EURUSD", side:"BUY", trigger:"one_time", triggerDetail:""}));
+    const account=accountsQ.data?.find(a=>a.id===defaultsQ.data?.schedules)||accountsQ.data?.find(a=>a.id==='acc-paper-main');
+    setForm((f:any)=> ({...f, accountId:account?.id??'acc-paper-main',accountLabel:account?.label??'Paper Main',name:"", symbol:"EURUSD", side:"BUY", trigger:"one_time", triggerDetail:""}));
     setDrawerOpen(true);
   };
 
   const handleCreate = async ()=>{
     if(!form.symbol || !form.side) { toast("Symbol and side required."); return; }
-    const brokerMap: Record<string, any> = { "acc-paper-main": {b:"paper", l:"OStrade Paper"}, "acc-exness-trial": {b:"exness", l:"Exness MT5"}, "acc-deriv-demo": {b:"deriv", l:"Deriv"} };
-    const bm = brokerMap[form.accountId] || {b:"paper", l:form.accountLabel};
+    const account=accountsQ.data?.find(a=>a.id===form.accountId);
+    if(!account){toast("Choose an available account.");return;}
     const res = await createSingleSchedule({
       name: form.name, trigger: form.trigger, triggerDetail: form.triggerDetail || (form.trigger==="one_time"? form.fireAt : form.trigger==="cron"? form.cron : form.trigger==="interval"? `every ${form.intervalN}${form.intervalUnit} ${form.windowStart}-${form.windowEnd}` : form.trigger==="session"? form.session : form.trigger==="price"? `if ${form.priceCond} ${form.priceVal}` : `if ${form.indicatorCond}`),
-      accountId: form.accountId, accountLabel: form.accountLabel, broker: bm.b, brokerLabel: bm.l,
+      accountId: form.accountId, accountLabel: form.accountLabel, broker: account.broker, brokerLabel: account.brokerName,
       symbol: form.symbol, side: form.side, size: form.size, sl: form.sl, tp: form.tp, expiry: form.expiry, tags: form.tags? form.tags.split(",").map((t:string)=>t.trim()).filter(Boolean) : []
     });
     toast(res.message);

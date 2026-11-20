@@ -1,3 +1,4 @@
+import { publishNotice } from "./notificationStore";
 import {
   carryOptions,
   channelOptions,
@@ -311,6 +312,7 @@ export async function runRiskControl(input: {
   target?: string;
   reason: string;
   code?: string;
+  source?: "Telegram rehearsal";
 }) {
   codeRequired(input.code);
   const reason = validReason(input.reason);
@@ -325,7 +327,7 @@ export async function runRiskControl(input: {
         category: "Control",
         mode: "Live local",
         rule: kind,
-        subject: "Emergency control",
+        subject: input.source ? "Emergency control · Telegram rehearsal" : "Emergency control",
         scope,
         decision: "PASS",
         reason,
@@ -333,6 +335,7 @@ export async function runRiskControl(input: {
         ref,
       });
       markEngagement({ at: row.at, command: kind, reason, ref: ref ?? row.id });
+      if (["pause","lockdown","flatten","rule-pause","account-pause"].includes(kind)) publishNotice({event:"killswitch.engaged",id:`switch:${ref??row.id}`,title:kind==='lockdown'?'Full workspace lockdown':kind==='flatten'?'Close-all completed':kind==='pause'?'Automation paused':'Scoped automation paused',body:message,accountLabel:scope,ref:ref??row.id});
       return latency({ message, state: state(), ref: row.ref ?? row.id });
     };
     if (

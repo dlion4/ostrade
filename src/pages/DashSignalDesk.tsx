@@ -27,7 +27,7 @@ import {
   ImportSection,
   PerformanceSection,
 } from "@/components/signals/Oversight";
-import { getAccounts } from "@/services/dashboard";
+import { getAccounts, getBrokerDefaults } from "@/services/dashboard";
 import { getMarketUniverse } from "@/services/markets";
 import {
   eatTime,
@@ -53,6 +53,7 @@ export function DashSignalDeskPage() {
     queryFn: getSignals,
     refetchOnMount: "always",
   });
+  const defaultsQ = useQuery({queryKey:["broker-defaults"],queryFn:getBrokerDefaults});
   const accts = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const universe = useQuery({
     queryKey: ["market-universe"],
@@ -102,10 +103,10 @@ export function DashSignalDeskPage() {
     setOptions((prev) => ({
       ...prev,
       accounts: fanoutAccountIds.length ? fanoutAccountIds : [
-        activeAccountId === "all" ? globalMode === "paper" ? "acc-paper-main" : "acc-exness-trial" : activeAccountId,
+        activeAccountId === "all" ? (defaultsQ.data?.signals || (globalMode === "paper" || (accts.data && !accts.data.some(a=>a.id==="acc-exness-trial")) ? "acc-paper-main" : "acc-exness-trial")) : activeAccountId,
       ],
     }));
-  }, [activeAccountId, fanoutAccountIds, globalMode]);
+  }, [activeAccountId, fanoutAccountIds, globalMode, defaultsQ.data?.signals, accts.data]);
   const refresh = useCallback(() => {
     for (const key of [
       "signals",
