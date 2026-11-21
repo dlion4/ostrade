@@ -186,6 +186,7 @@ function MarketsHeader() {
   return (
     <PageHero
       icon={Compass}
+      art="markets"
       kicker="T-2 · MULTI-BROKER EXPLORER"
       titleId="os-mk-title"
       title="Markets"

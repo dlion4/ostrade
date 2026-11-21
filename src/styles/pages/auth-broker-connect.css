@@ -1,0 +1,232 @@
+/* A-4 Broker Connect — scoped under .page-auth-broker-connect, all classes prefixed .os- */
+.page-auth-broker-connect { overflow-x: clip; }
+
+/* ── Hero & brand band (same manner as A-1/A-2/A-3) ──────── */
+.page-auth-broker-connect .os-auth-hero { position: relative; padding: 2.5rem 0 4.5rem; }
+.page-auth-broker-connect .os-hero-grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.55;
+  background-image: radial-gradient(var(--os-hairline-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 70%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 70%);
+}
+.page-auth-broker-connect .os-brand-band {
+  position: relative; display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+  padding-bottom: 2.25rem; margin-bottom: 2.25rem; border-bottom: 1px solid var(--os-hairline);
+}
+.page-auth-broker-connect .os-brand-mark { display: inline-flex; align-items: center; gap: 0.65rem; color: var(--os-text); text-decoration: none; }
+.page-auth-broker-connect .os-brand-mark:hover { color: var(--os-text); }
+.page-auth-broker-connect .os-mark-icon {
+  width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px;
+  background: var(--os-brand); color: var(--os-on-brand); box-shadow: 0 6px 16px -8px rgba(249, 115, 22, 0.7);
+}
+.page-auth-broker-connect .os-draw-mark { width: 22px; height: 22px; }
+.page-auth-broker-connect .os-draw-mark path {
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation: os-draw 1.15s var(--os-ease) 0.15s forwards;
+}
+.page-auth-broker-connect .os-band-tagline { margin: 0; color: var(--os-text-3); font-size: 0.88rem; font-weight: 500; }
+.page-auth-broker-connect .os-band-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.page-auth-broker-connect .os-band-step-chip { padding: 0.3rem 0.7rem; border: 1px solid var(--os-hairline-strong); border-radius: 999px; color: var(--os-text-2); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; }
+
+/* Two-column layout: picker rail + flow panel */
+.page-auth-broker-connect .os-auth-grid { display: grid; gap: 1.75rem; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 1200px) { .page-auth-broker-connect .os-auth-grid { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); } }
+@media (min-width: 992px) and (max-width: 1199.98px) { .page-auth-broker-connect .os-auth-grid { grid-template-columns: minmax(0, 640px); justify-content: center; } }
+.page-auth-broker-connect .os-picker-col, .page-auth-broker-connect .os-flow-col { min-width: 0; }
+
+/* fadeSlideUp motion hook (per broker card / per panel) */
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+.page-auth-broker-connect .os-fade-up { animation: fadeSlideUp 0.32s var(--os-ease); }
+@media (prefers-reduced-motion: reduce) {
+  .page-auth-broker-connect .os-fade-up { animation: none; }
+  .page-auth-broker-connect .os-draw-mark path { animation: none; stroke-dashoffset: 0; }
+  .page-auth-broker-connect .os-pulse-dot { animation: none; }
+}
+
+/* ── S1 Broker picker cards ──────────────────────────────── */
+.page-auth-broker-connect .os-picker-head { margin-bottom: 1.1rem; }
+.page-auth-broker-connect .os-picker-head h1 { margin: 0.7rem 0 0.45rem; font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 700; }
+.page-auth-broker-connect .os-picker-head p { margin: 0; color: var(--os-text-2); font-size: 0.9rem; line-height: 1.55; }
+.page-auth-broker-connect .os-broker-list { display: grid; gap: 0.75rem; }
+.page-auth-broker-connect .os-broker-card {
+  display: grid; gap: 0.65rem; padding: 1rem 1.1rem; border: 1px solid var(--os-hairline); border-radius: 14px;
+  background: var(--os-surface-1); box-shadow: var(--os-shadow-sm); text-align: left; width: 100%;
+  cursor: pointer; transition: border-color 0.18s var(--os-ease), box-shadow 0.18s var(--os-ease), transform 0.18s var(--os-ease);
+  font: inherit; color: inherit;
+}
+.page-auth-broker-connect .os-broker-card:hover { border-color: var(--os-brand); box-shadow: var(--os-shadow-lg); transform: translateY(-1px); }
+.page-auth-broker-connect .os-broker-card.is-selected { border-color: var(--os-brand); box-shadow: 0 0 0 3px var(--os-brand-soft); }
+.page-auth-broker-connect .os-broker-top { display: flex; align-items: center; gap: 0.7rem; }
+.page-auth-broker-connect .os-broker-badge {
+  flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px;
+  font-size: 0.78rem; font-weight: 800; letter-spacing: 0.02em;
+}
+.page-auth-broker-connect .os-broker-badge.tone-orange { background: var(--os-brand-soft); color: var(--os-brand-ink); }
+.page-auth-broker-connect .os-broker-badge.tone-cyan { background: rgba(34, 211, 238, 0.14); color: #0891b2; }
+.page-auth-broker-connect .os-broker-badge.tone-green { background: var(--os-up-soft); color: var(--os-up); }
+.page-auth-broker-connect .os-broker-badge.tone-violet { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
+.page-auth-broker-connect .os-broker-badge.tone-amber { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+.page-auth-broker-connect .os-broker-badge.tone-slate { background: var(--os-surface-3); color: var(--os-text-2); }
+.page-auth-broker-connect .os-broker-name { font-weight: 700; font-size: 0.95rem; line-height: 1.2; }
+.page-auth-broker-connect .os-broker-sub { color: var(--os-text-3); font-size: 0.74rem; }
+.page-auth-broker-connect .os-broker-reco { margin-left: auto; padding: 0.2rem 0.5rem; border-radius: 6px; background: var(--os-up-soft); color: var(--os-up); font-size: 0.6rem; font-weight: 800; letter-spacing: 0.07em; white-space: nowrap; }
+.page-auth-broker-connect .os-broker-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 0.75rem; color: var(--os-text-3); font-size: 0.74rem; }
+.page-auth-broker-connect .os-broker-method { padding: 0.18rem 0.5rem; border: 1px solid var(--os-hairline); border-radius: 6px; background: var(--os-surface-2); color: var(--os-text-2); font-weight: 700; font-size: 0.68rem; }
+.page-auth-broker-connect .os-chip-row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.page-auth-broker-connect .os-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.22rem 0.5rem; border-radius: 7px;
+  font-size: 0.68rem; font-weight: 700; border: 1px solid var(--os-hairline); background: var(--os-surface-2); color: var(--os-text-3);
+}
+.page-auth-broker-connect .os-chip svg { flex: none; }
+.page-auth-broker-connect .os-chip.is-yes { background: var(--os-up-soft); color: var(--os-up); border-color: transparent; }
+.page-auth-broker-connect .os-chip.is-partial { background: var(--os-warn-soft); color: var(--os-warn); border-color: transparent; }
+.page-auth-broker-connect .os-chip.is-no { opacity: 0.75; }
+.page-auth-broker-connect .os-broker-min { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--os-text-3); font-size: 0.72rem; }
+.page-auth-broker-connect .os-broker-min .os-mono { color: var(--os-brand-ink); font-weight: 700; }
+
+/* ── Flow panel card (S2/S3/S4/S5) ───────────────────────── */
+.page-auth-broker-connect .os-flow-card { background: var(--os-surface-1); border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); box-shadow: var(--os-shadow-lg); overflow: hidden; }
+.page-auth-broker-connect .os-flow-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 1.4rem 1.75rem 1.15rem; border-bottom: 1px solid var(--os-hairline); }
+.page-auth-broker-connect .os-flow-head h2 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.page-auth-broker-connect .os-flow-head p { flex: 1 1 100%; margin: 0; color: var(--os-text-2); font-size: 0.84rem; line-height: 1.5; }
+.page-auth-broker-connect .os-flow-body { padding: 1.5rem 1.75rem 1.75rem; }
+.page-auth-broker-connect .os-flow-empty { display: grid; gap: 0.6rem; justify-items: center; text-align: center; padding: 2.5rem 1.5rem; color: var(--os-text-3); font-size: 0.86rem; }
+.page-auth-broker-connect .os-flow-empty svg { color: var(--os-text-3); opacity: 0.6; }
+.page-auth-broker-connect .os-back-link { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0; border: 0; background: none; color: var(--os-text-3); font-size: 0.76rem; font-weight: 700; cursor: pointer; }
+.page-auth-broker-connect .os-back-link:hover { color: var(--os-brand-ink); }
+
+/* Fields — shared manner with A-1/A-3 */
+.page-auth-broker-connect .os-field { display: grid; gap: 0.4rem; }
+.page-auth-broker-connect .os-field label, .page-auth-broker-connect .os-field-label { font-size: 0.82rem; font-weight: 600; }
+.page-auth-broker-connect .os-req, .page-auth-broker-connect .os-opt { margin-left: 0.4rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; }
+.page-auth-broker-connect .os-req { color: var(--os-brand-ink); }
+.page-auth-broker-connect .os-opt { color: var(--os-text-3); }
+.page-auth-broker-connect .os-input-wrap { position: relative; display: flex; align-items: center; }
+.page-auth-broker-connect .os-input-wrap > svg { position: absolute; left: 0.85rem; color: var(--os-text-3); pointer-events: none; }
+.page-auth-broker-connect .os-input {
+  width: 100%; height: 46px; padding: 0 0.85rem; border: 1px solid var(--os-hairline-strong); border-radius: 11px;
+  background: var(--os-surface-1); color: var(--os-text); font-family: var(--os-font-ui); font-size: 0.92rem;
+  transition: border-color 0.18s var(--os-ease), box-shadow 0.18s var(--os-ease);
+}
+.page-auth-broker-connect .os-input-wrap .os-input { padding-left: 2.55rem; }
+.page-auth-broker-connect select.os-input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--os-text-3) 50%), linear-gradient(135deg, var(--os-text-3) 50%, transparent 50%); background-position: calc(100% - 19px) 50%, calc(100% - 13px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 2.4rem; }
+.page-auth-broker-connect .os-input::placeholder { color: var(--os-text-3); }
+.page-auth-broker-connect .os-input:focus { outline: none; border-color: var(--os-brand); box-shadow: 0 0 0 3px var(--os-brand-soft); }
+.page-auth-broker-connect .os-input.is-invalid { border-color: var(--os-down); }
+.page-auth-broker-connect .os-field-error { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--os-down); font-size: 0.76rem; font-weight: 600; }
+.page-auth-broker-connect .os-field-hint { color: var(--os-text-3); font-size: 0.72rem; line-height: 1.45; }
+.page-auth-broker-connect .os-radio-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.page-auth-broker-connect .os-radio {
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.9rem; border: 1px solid var(--os-hairline-strong); border-radius: 10px;
+  background: var(--os-surface-1); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  transition: border-color 0.18s var(--os-ease), background-color 0.18s var(--os-ease);
+}
+.page-auth-broker-connect .os-radio input { accent-color: var(--os-brand); }
+.page-auth-broker-connect .os-radio.is-active { border-color: var(--os-brand); background: var(--os-brand-soft); }
+.page-auth-broker-connect .os-radio small { display: block; color: var(--os-text-3); font-size: 0.68rem; font-weight: 600; }
+
+/* os-pulse motion hook (connecting states) */
+@keyframes os-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.82); } }
+.page-auth-broker-connect .os-pulse-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--os-brand); display: inline-block;
+  animation: os-pulse 0.9s var(--os-ease) infinite;
+}
+.page-auth-broker-connect .os-connecting { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--os-brand-ink); font-size: 0.78rem; font-weight: 700; }
+.page-auth-broker-connect .os-staged { display: grid; gap: 0.4rem; }
+.page-auth-broker-connect .os-stage-line { display: flex; align-items: center; gap: 0.55rem; color: var(--os-text-3); font-size: 0.78rem; }
+.page-auth-broker-connect .os-stage-line.is-done { color: var(--os-up); }
+.page-auth-broker-connect .os-stage-line.is-active { color: var(--os-text); font-weight: 700; }
+
+/* ── S2 Deriv OAuth stepper ──────────────────────────────── */
+.page-auth-broker-connect .os-oauth-steps { display: grid; gap: 0.9rem; }
+.page-auth-broker-connect .os-oauth-step { display: grid; gap: 0.65rem; padding: 1rem 1.1rem; border: 1px solid var(--os-hairline); border-radius: 12px; background: var(--os-surface-2); }
+.page-auth-broker-connect .os-oauth-step.is-active { border-color: var(--os-brand); background: var(--os-surface-1); box-shadow: 0 0 0 3px var(--os-brand-soft); }
+.page-auth-broker-connect .os-oauth-step.is-done { opacity: 0.85; }
+.page-auth-broker-connect .os-oauth-step-top { display: flex; align-items: center; gap: 0.6rem; }
+.page-auth-broker-connect .os-oauth-n { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--os-hairline-strong); background: var(--os-surface-1); color: var(--os-text-3); font-size: 0.7rem; font-weight: 800; }
+.page-auth-broker-connect .os-oauth-step.is-active .os-oauth-n { border-color: var(--os-brand); color: var(--os-brand-ink); background: var(--os-brand-soft); }
+.page-auth-broker-connect .os-oauth-step.is-done .os-oauth-n { border-color: var(--os-up); color: var(--os-up); background: var(--os-up-soft); }
+.page-auth-broker-connect .os-oauth-title { font-weight: 700; font-size: 0.9rem; }
+.page-auth-broker-connect .os-oauth-step p { margin: 0; color: var(--os-text-2); font-size: 0.82rem; line-height: 1.55; }
+.page-auth-broker-connect .os-uri-box { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 0.75rem; border: 1px dashed var(--os-hairline-strong); border-radius: 9px; background: var(--os-surface-2); }
+.page-auth-broker-connect .os-uri-box .os-mono { flex: 1 1 220px; font-size: 0.76rem; word-break: break-all; color: var(--os-text-2); }
+.page-auth-broker-connect .os-scope-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem; }
+.page-auth-broker-connect .os-scope-list li { display: flex; align-items: flex-start; gap: 0.45rem; font-size: 0.8rem; color: var(--os-text-2); }
+.page-auth-broker-connect .os-scope-list li svg { flex: none; margin-top: 2px; color: var(--os-up); }
+.page-auth-broker-connect .os-callback-payload { padding: 0.7rem 0.85rem; border-radius: 9px; background: #0f172a; color: #e2e8f0; font-family: var(--os-font-mono); font-size: 0.74rem; line-height: 1.7; }
+.page-auth-broker-connect .os-acct-pick { display: grid; gap: 0.5rem; }
+.page-auth-broker-connect .os-acct-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.85rem; border: 1px solid var(--os-hairline-strong); border-radius: 10px; background: var(--os-surface-1); cursor: pointer; }
+.page-auth-broker-connect .os-acct-row input { accent-color: var(--os-brand); }
+.page-auth-broker-connect .os-acct-row.is-active { border-color: var(--os-brand); background: var(--os-brand-soft); }
+.page-auth-broker-connect .os-acct-row .os-mono { font-size: 0.8rem; }
+.page-auth-broker-connect .os-acct-badge { margin-left: auto; padding: 0.18rem 0.5rem; border-radius: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em; }
+.page-auth-broker-connect .os-acct-badge.is-demo { background: var(--os-up-soft); color: var(--os-up); }
+.page-auth-broker-connect .os-acct-badge.is-live { background: var(--os-warn-soft); color: var(--os-warn); }
+.page-auth-broker-connect .os-inert-note { display: flex; align-items: flex-start; gap: 0.4rem; margin: 0; color: var(--os-text-3); font-size: 0.72rem; line-height: 1.5; }
+.page-auth-broker-connect .os-inert-note svg { flex: none; margin-top: 2px; }
+
+/* ── S3 MT5 proof panel ──────────────────────────────────── */
+.page-auth-broker-connect .os-proof { display: grid; gap: 0.75rem; padding: 1rem 1.1rem; border: 1px solid var(--os-up); border-radius: 12px; background: var(--os-up-soft); animation: fadeSlideUp 0.3s var(--os-ease); }
+.page-auth-broker-connect .os-proof-head { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; color: var(--os-up); letter-spacing: 0.02em; }
+.page-auth-broker-connect .os-proof-grid { display: grid; gap: 0.6rem; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 576px) { .page-auth-broker-connect .os-proof-grid { grid-template-columns: repeat(4, 1fr); } }
+.page-auth-broker-connect .os-proof-cell { display: grid; gap: 0.2rem; padding: 0.6rem 0.7rem; border-radius: 9px; background: var(--os-surface-1); border: 1px solid var(--os-hairline); }
+.page-auth-broker-connect .os-proof-cell small { color: var(--os-text-3); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.page-auth-broker-connect .os-proof-cell .os-mono { font-size: 0.85rem; font-weight: 700; }
+.page-auth-broker-connect .os-form-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+
+/* ── S4 compact key-based cards ──────────────────────────── */
+.page-auth-broker-connect .os-key-grid { display: grid; gap: 0.9rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .page-auth-broker-connect .os-key-grid { grid-template-columns: repeat(2, 1fr); } }
+.page-auth-broker-connect .os-key-card { display: grid; gap: 0.75rem; padding: 1rem 1.1rem; border: 1px solid var(--os-hairline); border-radius: 12px; background: var(--os-surface-2); }
+.page-auth-broker-connect .os-key-head { display: flex; align-items: center; gap: 0.6rem; }
+.page-auth-broker-connect .os-key-head .os-broker-badge { width: 34px; height: 34px; border-radius: 9px; font-size: 0.7rem; }
+.page-auth-broker-connect .os-key-head strong { font-size: 0.92rem; }
+.page-auth-broker-connect .os-key-head small { display: block; color: var(--os-text-3); font-size: 0.7rem; font-weight: 500; }
+.page-auth-broker-connect .os-key-note { display: flex; align-items: flex-start; gap: 0.4rem; color: var(--os-text-3); font-size: 0.72rem; line-height: 1.5; }
+.page-auth-broker-connect .os-key-note svg { flex: none; margin-top: 2px; }
+.page-auth-broker-connect .os-key-proof { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem 0.7rem; font-size: 0.76rem; color: var(--os-text-2); }
+.page-auth-broker-connect .os-key-proof .os-mono { font-weight: 700; color: var(--os-text); }
+
+/* ── S5 confirmation ─────────────────────────────────────── */
+.page-auth-broker-connect .os-confirm-band { display: grid; gap: 1rem; padding: 1.25rem; border-radius: 14px; background: #0f172a; color: #f8fafc; }
+.page-auth-broker-connect .os-confirm-top { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.page-auth-broker-connect .os-confirm-top strong { font-size: 1rem; color: #fff; }
+.page-auth-broker-connect .os-type-badge { padding: 0.22rem 0.6rem; border-radius: 6px; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; }
+.page-auth-broker-connect .os-type-badge.is-live { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.page-auth-broker-connect .os-type-badge.is-demo { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.page-auth-broker-connect .os-type-badge.is-paper { background: rgba(148, 163, 184, 0.22); color: #cbd5e1; }
+.page-auth-broker-connect .os-confirm-grid { display: grid; gap: 0.6rem; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 576px) { .page-auth-broker-connect .os-confirm-grid { grid-template-columns: repeat(4, 1fr); } }
+.page-auth-broker-connect .os-confirm-cell small { display: block; color: #94a3b8; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.page-auth-broker-connect .os-confirm-cell .os-mono { font-size: 0.88rem; font-weight: 700; color: #fff; }
+.page-auth-broker-connect .os-confirm-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; }
+.page-auth-broker-connect .os-confirm-actions .os-btn-ghost { border: 1px solid rgba(255,255,255,0.25); color: #e2e8f0; }
+.page-auth-broker-connect .os-security-note { display: flex; align-items: flex-start; gap: 0.5rem; color: #94a3b8; font-size: 0.76rem; line-height: 1.55; }
+.page-auth-broker-connect .os-security-note svg { flex: none; margin-top: 2px; color: #4ade80; }
+
+/* Ready (inert save) state */
+.page-auth-broker-connect .os-ready { display: flex; align-items: flex-start; gap: 0.85rem; flex-wrap: wrap; padding: 1rem 1.15rem; border-radius: 12px; background: var(--os-warn-soft); border: 1px solid var(--os-warn); animation: fadeSlideUp 0.25s var(--os-ease); }
+.page-auth-broker-connect .os-ready-icon { flex: none; color: var(--os-warn); }
+.page-auth-broker-connect .os-ready-body { flex: 1 1 240px; }
+.page-auth-broker-connect .os-ready-badge { display: inline-block; padding: 0.2rem 0.5rem; margin-bottom: 0.5rem; border-radius: 5px; background: var(--os-surface-1); color: var(--os-warn); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; }
+.page-auth-broker-connect .os-ready h3 { margin: 0 0 0.35rem; font-size: 0.98rem; font-weight: 700; }
+.page-auth-broker-connect .os-ready p { margin: 0 0 0.35rem; color: var(--os-text-2); font-size: 0.82rem; line-height: 1.5; }
+.page-auth-broker-connect .os-ready-ref { color: var(--os-text-3); font-size: 0.7rem; }
+
+/* Foot */
+.page-auth-broker-connect .os-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 1rem; padding: 1rem 1.75rem; border-top: 1px solid var(--os-hairline); background: var(--os-surface-2); font-size: 0.8rem; color: var(--os-text-2); }
+.page-auth-broker-connect .os-foot a { color: var(--os-brand-ink); font-weight: 700; text-decoration: none; }
+.page-auth-broker-connect .os-foot a:hover { text-decoration: underline; }
+.page-auth-broker-connect .os-foot-links { display: inline-flex; flex-wrap: wrap; gap: 0.9rem; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+  .page-auth-broker-connect .os-auth-hero { padding: 2rem 0 3rem; }
+  .page-auth-broker-connect .os-brand-band { padding-bottom: 1.5rem; margin-bottom: 1.75rem; }
+}
+@media (max-width: 575.98px) {
+  .page-auth-broker-connect .os-flow-head, .page-auth-broker-connect .os-flow-body, .page-auth-broker-connect .os-foot { padding-inline: 1.15rem; }
+  .page-auth-broker-connect .os-proof-grid, .page-auth-broker-connect .os-confirm-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-auth-broker-connect .os-key-grid { grid-template-columns: 1fr; }
+}

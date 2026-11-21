@@ -1,38 +1,6 @@
 // A-2 service layer. Signatures mirror the future auth REST API.
 // FRONTEND-ONLY: no session is issued, no code is sent or verified over the wire.
-import {
-  postSignInPanels,
-  recentSessions,
-  recoveryOptions,
-  redirectNodes,
-  roleRedirects,
-  securityPractices,
-  sessionPolicies,
-  signInFaqs,
-  signInMethods,
-  type PostSignInPanel,
-  type RecentSession,
-  type RecoveryOption,
-  type RedirectNode,
-  type RoleRedirect,
-  type SecurityPractice,
-  type SessionPolicy,
-  type SignInFaq,
-  type SignInMethod,
-} from "@/data/auth-signin";
 import { latency } from "./_latency";
-
-export type { PostSignInPanel, RecentSession, RecoveryOption, RedirectNode, RoleRedirect, SecurityPractice, SessionPolicy, SignInFaq, SignInMethod };
-
-export const getSignInMethods = (): Promise<SignInMethod[]> => latency(signInMethods, 300, 500);
-export const getRoleRedirects = (): Promise<RoleRedirect[]> => latency(roleRedirects, 300, 600);
-export const getSessionPolicies = (): Promise<SessionPolicy[]> => latency(sessionPolicies, 300, 500);
-export const getRecentSessions = (): Promise<RecentSession[]> => latency(recentSessions, 300, 600);
-export const getPostSignInPanels = (): Promise<PostSignInPanel[]> => latency(postSignInPanels, 300, 500);
-export const getRecoveryOptions = (): Promise<RecoveryOption[]> => latency(recoveryOptions, 300, 500);
-export const getSecurityPractices = (): Promise<SecurityPractice[]> => latency(securityPractices, 300, 500);
-export const getSignInFaqs = (): Promise<SignInFaq[]> => latency(signInFaqs, 300, 500);
-export const getRedirectNodes = (): Promise<RedirectNode[]> => latency(redirectNodes, 300, 400);
 
 export interface CredentialsInput {
   identifier: string;
@@ -94,15 +62,50 @@ export async function verifySecondFactor(code: string, kind: "totp" | "otp"): Pr
   }, 450, 750);
 }
 
-/** Future REST shape: POST /auth/session/revoke-all. Deliberately inert in this preview. */
-export async function revokeAllSessions(): Promise<InertAuthResult> {
+export interface PasswordResetRequest {
+  identifier: string;
+  channel: "email" | "phone";
+}
+
+/** Future REST shape: POST /auth/password/reset-request. Rate-limits (1/60s, 5/hour) are enforced by the backend; the preview mirrors them client-side. */
+export async function requestPasswordResetOtp(input: PasswordResetRequest): Promise<InertAuthResult> {
   return latency({
     status: "ready" as const,
     simulated: false,
     title: "Ready — executes when the backend is connected",
-    message: "Every remembered device would be signed out at once.",
-    detail: "The session list below is local sample data, so nothing was actually revoked.",
-    reference: "REVOKE-PREVIEW-001",
-    landing,
-  }, 400, 700);
+    message: `A 6-digit reset code would be sent by ${input.channel} to the identifier you entered. Nothing was sent.`,
+    detail: "Next in the real flow: the code expires in 10 minutes and is single-use; it unlocks the reset-password page.",
+    reference: "RESET-PREVIEW-001",
+    landing: "/auth/reset-password · A-6",
+  }, 450, 750);
+}
+
+export interface ResetPasswordInput {
+  code: string;
+  password: string;
+}
+
+/** What the real reset flow reports: sessions killed, WS tokens dropped in memory. */
+export interface ResetSecuritySummary {
+  sessionsInvalidated: number;
+  wsTokensRevoked: string[];
+  note: string;
+}
+
+/** Future REST shape: POST /auth/password/reset. Preview stops at a labelled state and reports the designed blast radius. */
+export async function resetPassword(_input: ResetPasswordInput): Promise<InertAuthResult & { security: ResetSecuritySummary }> {
+  return latency({
+    status: "ready" as const,
+    simulated: false,
+    title: "Ready — executes when the backend is connected",
+    message: "The code format and new password passed every local check. Nothing was reset and no session was touched.",
+    detail: "Next in the real flow: the code is burned, the password hash is replaced, and every live session is killed at once.",
+    reference: "RESET-PREVIEW-002",
+    landing: "/auth/signin · auto-redirect",
+    security: {
+      sessionsInvalidated: 2,
+      wsTokensRevoked: ["Deriv WebSocket session", "MetaApi MT5 bridge"],
+      note: "Adapters reconnect automatically with the stored credentials on your next sign-in — re-authentication at the broker is never needed.",
+    },
+  }, 500, 800);
 }

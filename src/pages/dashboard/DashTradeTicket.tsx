@@ -36,6 +36,7 @@ import {
   Sparkles,
   X,
   Zap,
+  ReceiptText,
 } from "lucide-react";
 import { TargetAccountPicker } from "@/components/TargetAccountPicker";
 import { CountUp } from "@/components/CountUp";
@@ -784,7 +785,8 @@ export function DashTradeTicketPage() {
     <main className="page-dash-trade-ticket" aria-labelledby="os-tt-title">
       {/* Header */}
       <PageHero
-        icon={Zap}
+        icon={ReceiptText}
+        art="trade"
         kicker="T-3 · ORDER ENTRY"
         titleId="os-tt-title"
         title="Trade Ticket"

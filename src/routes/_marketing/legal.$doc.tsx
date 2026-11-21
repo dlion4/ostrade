@@ -16,7 +16,7 @@ const LEGAL: Record<string, { title: string; blurb: string }> = {
   },
 };
 
-export const Route = createFileRoute("/home/legal/$doc")({
+export const Route = createFileRoute("/_marketing/legal/$doc")({
   component: LegalStub,
 });
 

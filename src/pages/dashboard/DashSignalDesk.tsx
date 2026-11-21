@@ -164,6 +164,7 @@ export function DashSignalDeskPage() {
     >
       <PageHero
         icon={Cable}
+        art="signals"
         kicker="T-4 · SIGNAL DESK"
         titleId="os-desk-title"
         title={<>Signal Desk<span className="os-hero-accent">.</span></>}
