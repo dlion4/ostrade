@@ -19,6 +19,7 @@ import {
   Trash2,
   X,
   Zap,
+  Workflow,
 } from "lucide-react";
 import { QueryError } from "@/components/QueryError";
 import { useToast } from "@/components/Toast";
@@ -311,11 +312,12 @@ export function DashAutomationPage() {
   return (
     <main className="page-dash-signal-automation" aria-labelledby="os-auto-title">
       <PageHero
-        icon={Zap}
+        icon={Workflow}
+        art="automation"
         kicker="T-5 · AUTOMATION"
         titleId="os-auto-title"
         title={<>Automation <span className="os-hero-accent">&amp;</span> Scheduling</>}
-        lead="Automate your own actions: schedule saved signals for later, set rules that apply to every trade, and pause, stop or resume the workspace. Paper trades simulate locally — nothing here changes broker-side settings."
+        lead="Schedule saved signals, set rules for every trade, and pause, stop or resume the workspace — paper trades simulate locally."
         meta={
           <>
             <span className="os-hero-pill"><ShieldCheck size={13} aria-hidden /> YOUR ACTIONS · NOT BROKER SETTINGS</span>

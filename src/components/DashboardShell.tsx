@@ -103,12 +103,22 @@ export interface DashNavItem {
 
 export const DASH_NAV_GROUPS: { group: string; items: DashNavItem[] }[] = [
   {
-    group: "Cockpit & Markets",
+    group: "Overview",
     items: [
       { code: "T-1", label: "Command Center", to: "/dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    group: "Markets & Signals",
+    items: [
       { code: "T-2", label: "Markets", to: "/dashboard/markets", icon: Compass },
-      { code: "T-3", label: "Trade Ticket", to: "/dashboard/trade", icon: Send },
       { code: "T-4", label: "Signal Desk", to: "/dashboard/signals", icon: ClipboardPaste },
+    ],
+  },
+  {
+    group: "Trade",
+    items: [
+      { code: "T-3", label: "Trade Ticket", to: "/dashboard/trade", icon: Send },
     ],
   },
   {
@@ -281,7 +291,7 @@ function SidebarContent({ onNavigate, desk = false }: { onNavigate?: () => void;
     <>
       {DASH_NAV_GROUPS.map((grp, idx) => (
         <div key={grp.group} className="mb-2">
-          <div className="os-nav-group-label">{desk ? ["Workspace", "Trading tools", "Accounts & finance", "System"][idx] : grp.group}</div>
+          <div className="os-nav-group-label">{desk ? ["Workspace", "Markets & signals", "Trade", "Trading tools", "Accounts & finance", "System"][idx] : grp.group}</div>
           <nav aria-label={grp.group}>
             {grp.items.map((item) => {
               const Icon = desk && item.code === "T-4" ? Radio : item.icon;

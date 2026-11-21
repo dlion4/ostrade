@@ -9,7 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MarketingRouteImport } from './routes/_marketing'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
+import { Route as MarketingBrokersRouteImport } from './routes/_marketing/brokers'
+import { Route as MarketingHowItWorksRouteImport } from './routes/_marketing/how-it-works'
+import { Route as MarketingStatusRouteImport } from './routes/_marketing/status'
+import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as Auth2faRouteImport } from './routes/auth/2fa'
 import { Route as AuthBrokerConnectRouteImport } from './routes/auth/broker-connect'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
@@ -34,56 +41,86 @@ import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals
 import { Route as DashboardTradeRouteImport } from './routes/dashboard/trade'
 import { Route as DashboardTransfersRouteImport } from './routes/dashboard/transfers'
 import { Route as DashboardWithdrawalsRouteImport } from './routes/dashboard/withdrawals'
-import { Route as HomeIndexRouteImport } from './routes/home/index'
-import { Route as HomeBrokersRouteImport } from './routes/home/brokers'
-import { Route as HomeHowItWorksRouteImport } from './routes/home/how-it-works'
-import { Route as HomeStatusRouteImport } from './routes/home/status'
-import { Route as HomeLegalDocRouteImport } from './routes/home/legal.$doc'
+import { Route as MarketingLegalDocRouteImport } from './routes/_marketing/legal.$doc'
 
+const MarketingRoute = MarketingRouteImport.update({
+  id: '/_marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketingIndexRoute = MarketingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingBrokersRoute = MarketingBrokersRouteImport.update({
+  id: '/brokers',
+  path: '/brokers',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingHowItWorksRoute = MarketingHowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const MarketingStatusRoute = MarketingStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => MarketingRoute,
+} as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const Auth2faRoute = Auth2faRouteImport.update({
-  id: '/auth/2fa',
-  path: '/auth/2fa',
-  getParentRoute: () => rootRouteImport,
+  id: '/2fa',
+  path: '/2fa',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthBrokerConnectRoute = AuthBrokerConnectRouteImport.update({
-  id: '/auth/broker-connect',
-  path: '/auth/broker-connect',
-  getParentRoute: () => rootRouteImport,
+  id: '/broker-connect',
+  path: '/broker-connect',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/auth/forgot-password',
-  path: '/auth/forgot-password',
-  getParentRoute: () => rootRouteImport,
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthOnboardRoute = AuthOnboardRouteImport.update({
-  id: '/auth/onboard',
-  path: '/auth/onboard',
-  getParentRoute: () => rootRouteImport,
+  id: '/onboard',
+  path: '/onboard',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/auth/reset-password',
-  path: '/auth/reset-password',
-  getParentRoute: () => rootRouteImport,
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthSigninRoute = AuthSigninRouteImport.update({
-  id: '/auth/signin',
-  path: '/auth/signin',
-  getParentRoute: () => rootRouteImport,
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
-  id: '/auth/signup',
-  path: '/auth/signup',
-  getParentRoute: () => rootRouteImport,
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthVerifyOtpRoute = AuthVerifyOtpRouteImport.update({
-  id: '/auth/verify-otp',
-  path: '/auth/verify-otp',
-  getParentRoute: () => rootRouteImport,
+  id: '/verify-otp',
+  path: '/verify-otp',
+  getParentRoute: () => AuthRoute,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
@@ -165,34 +202,19 @@ const DashboardWithdrawalsRoute = DashboardWithdrawalsRouteImport.update({
   path: '/withdrawals',
   getParentRoute: () => DashboardRoute,
 } as any)
-const HomeIndexRoute = HomeIndexRouteImport.update({
-  id: '/home/',
-  path: '/home/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeBrokersRoute = HomeBrokersRouteImport.update({
-  id: '/home/brokers',
-  path: '/home/brokers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeHowItWorksRoute = HomeHowItWorksRouteImport.update({
-  id: '/home/how-it-works',
-  path: '/home/how-it-works',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeStatusRoute = HomeStatusRouteImport.update({
-  id: '/home/status',
-  path: '/home/status',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeLegalDocRoute = HomeLegalDocRouteImport.update({
-  id: '/home/legal/$doc',
-  path: '/home/legal/$doc',
-  getParentRoute: () => rootRouteImport,
+const MarketingLegalDocRoute = MarketingLegalDocRouteImport.update({
+  id: '/legal/$doc',
+  path: '/legal/$doc',
+  getParentRoute: () => MarketingRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof MarketingIndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRouteWithChildren
+  '/brokers': typeof MarketingBrokersRoute
+  '/how-it-works': typeof MarketingHowItWorksRoute
+  '/status': typeof MarketingStatusRoute
   '/auth/2fa': typeof Auth2faRoute
   '/auth/broker-connect': typeof AuthBrokerConnectRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -216,14 +238,14 @@ export interface FileRoutesByFullPath {
   '/dashboard/trade': typeof DashboardTradeRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
   '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
-  '/home/brokers': typeof HomeBrokersRoute
-  '/home/how-it-works': typeof HomeHowItWorksRoute
-  '/home/status': typeof HomeStatusRoute
+  '/auth/': typeof AuthIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/home/': typeof HomeIndexRoute
-  '/home/legal/$doc': typeof HomeLegalDocRoute
+  '/legal/$doc': typeof MarketingLegalDocRoute
 }
 export interface FileRoutesByTo {
+  '/brokers': typeof MarketingBrokersRoute
+  '/how-it-works': typeof MarketingHowItWorksRoute
+  '/status': typeof MarketingStatusRoute
   '/auth/2fa': typeof Auth2faRoute
   '/auth/broker-connect': typeof AuthBrokerConnectRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -247,16 +269,19 @@ export interface FileRoutesByTo {
   '/dashboard/trade': typeof DashboardTradeRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
   '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
-  '/home/brokers': typeof HomeBrokersRoute
-  '/home/how-it-works': typeof HomeHowItWorksRoute
-  '/home/status': typeof HomeStatusRoute
+  '/': typeof MarketingIndexRoute
+  '/auth': typeof AuthIndexRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/home': typeof HomeIndexRoute
-  '/home/legal/$doc': typeof HomeLegalDocRoute
+  '/legal/$doc': typeof MarketingLegalDocRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_marketing': typeof MarketingRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRouteWithChildren
+  '/_marketing/brokers': typeof MarketingBrokersRoute
+  '/_marketing/how-it-works': typeof MarketingHowItWorksRoute
+  '/_marketing/status': typeof MarketingStatusRoute
   '/auth/2fa': typeof Auth2faRoute
   '/auth/broker-connect': typeof AuthBrokerConnectRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -280,17 +305,20 @@ export interface FileRoutesById {
   '/dashboard/trade': typeof DashboardTradeRoute
   '/dashboard/transfers': typeof DashboardTransfersRoute
   '/dashboard/withdrawals': typeof DashboardWithdrawalsRoute
-  '/home/brokers': typeof HomeBrokersRoute
-  '/home/how-it-works': typeof HomeHowItWorksRoute
-  '/home/status': typeof HomeStatusRoute
+  '/_marketing/': typeof MarketingIndexRoute
+  '/auth/': typeof AuthIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/home/': typeof HomeIndexRoute
-  '/home/legal/$doc': typeof HomeLegalDocRoute
+  '/_marketing/legal/$doc': typeof MarketingLegalDocRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
+    | '/auth'
     | '/dashboard'
+    | '/brokers'
+    | '/how-it-works'
+    | '/status'
     | '/auth/2fa'
     | '/auth/broker-connect'
     | '/auth/forgot-password'
@@ -314,14 +342,14 @@ export interface FileRouteTypes {
     | '/dashboard/trade'
     | '/dashboard/transfers'
     | '/dashboard/withdrawals'
-    | '/home/brokers'
-    | '/home/how-it-works'
-    | '/home/status'
+    | '/auth/'
     | '/dashboard/'
-    | '/home/'
-    | '/home/legal/$doc'
+    | '/legal/$doc'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/brokers'
+    | '/how-it-works'
+    | '/status'
     | '/auth/2fa'
     | '/auth/broker-connect'
     | '/auth/forgot-password'
@@ -345,15 +373,18 @@ export interface FileRouteTypes {
     | '/dashboard/trade'
     | '/dashboard/transfers'
     | '/dashboard/withdrawals'
-    | '/home/brokers'
-    | '/home/how-it-works'
-    | '/home/status'
+    | '/'
+    | '/auth'
     | '/dashboard'
-    | '/home'
-    | '/home/legal/$doc'
+    | '/legal/$doc'
   id:
     | '__root__'
+    | '/_marketing'
+    | '/auth'
     | '/dashboard'
+    | '/_marketing/brokers'
+    | '/_marketing/how-it-works'
+    | '/_marketing/status'
     | '/auth/2fa'
     | '/auth/broker-connect'
     | '/auth/forgot-password'
@@ -377,33 +408,34 @@ export interface FileRouteTypes {
     | '/dashboard/trade'
     | '/dashboard/transfers'
     | '/dashboard/withdrawals'
-    | '/home/brokers'
-    | '/home/how-it-works'
-    | '/home/status'
+    | '/_marketing/'
+    | '/auth/'
     | '/dashboard/'
-    | '/home/'
-    | '/home/legal/$doc'
+    | '/_marketing/legal/$doc'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  MarketingRoute: typeof MarketingRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
   DashboardRoute: typeof DashboardRouteWithChildren
-  Auth2faRoute: typeof Auth2faRoute
-  AuthBrokerConnectRoute: typeof AuthBrokerConnectRoute
-  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
-  AuthOnboardRoute: typeof AuthOnboardRoute
-  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
-  AuthSigninRoute: typeof AuthSigninRoute
-  AuthSignupRoute: typeof AuthSignupRoute
-  AuthVerifyOtpRoute: typeof AuthVerifyOtpRoute
-  HomeBrokersRoute: typeof HomeBrokersRoute
-  HomeHowItWorksRoute: typeof HomeHowItWorksRoute
-  HomeStatusRoute: typeof HomeStatusRoute
-  HomeIndexRoute: typeof HomeIndexRoute
-  HomeLegalDocRoute: typeof HomeLegalDocRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_marketing': {
+      id: '/_marketing'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof MarketingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -411,61 +443,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_marketing/': {
+      id: '/_marketing/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof MarketingIndexRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/brokers': {
+      id: '/_marketing/brokers'
+      path: '/brokers'
+      fullPath: '/brokers'
+      preLoaderRoute: typeof MarketingBrokersRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/how-it-works': {
+      id: '/_marketing/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof MarketingHowItWorksRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/_marketing/status': {
+      id: '/_marketing/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof MarketingStatusRouteImport
+      parentRoute: typeof MarketingRoute
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/2fa': {
       id: '/auth/2fa'
-      path: '/auth/2fa'
+      path: '/2fa'
       fullPath: '/auth/2fa'
       preLoaderRoute: typeof Auth2faRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/broker-connect': {
       id: '/auth/broker-connect'
-      path: '/auth/broker-connect'
+      path: '/broker-connect'
       fullPath: '/auth/broker-connect'
       preLoaderRoute: typeof AuthBrokerConnectRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/forgot-password': {
       id: '/auth/forgot-password'
-      path: '/auth/forgot-password'
+      path: '/forgot-password'
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/onboard': {
       id: '/auth/onboard'
-      path: '/auth/onboard'
+      path: '/onboard'
       fullPath: '/auth/onboard'
       preLoaderRoute: typeof AuthOnboardRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/reset-password': {
       id: '/auth/reset-password'
-      path: '/auth/reset-password'
+      path: '/reset-password'
       fullPath: '/auth/reset-password'
       preLoaderRoute: typeof AuthResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/signin': {
       id: '/auth/signin'
-      path: '/auth/signin'
+      path: '/signin'
       fullPath: '/auth/signin'
       preLoaderRoute: typeof AuthSigninRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/signup': {
       id: '/auth/signup'
-      path: '/auth/signup'
+      path: '/signup'
       fullPath: '/auth/signup'
       preLoaderRoute: typeof AuthSignupRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/verify-otp': {
       id: '/auth/verify-otp'
-      path: '/auth/verify-otp'
+      path: '/verify-otp'
       fullPath: '/auth/verify-otp'
       preLoaderRoute: typeof AuthVerifyOtpRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -579,43 +646,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWithdrawalsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/home/': {
-      id: '/home/'
-      path: '/home'
-      fullPath: '/home/'
-      preLoaderRoute: typeof HomeIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home/brokers': {
-      id: '/home/brokers'
-      path: '/home/brokers'
-      fullPath: '/home/brokers'
-      preLoaderRoute: typeof HomeBrokersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home/how-it-works': {
-      id: '/home/how-it-works'
-      path: '/home/how-it-works'
-      fullPath: '/home/how-it-works'
-      preLoaderRoute: typeof HomeHowItWorksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home/status': {
-      id: '/home/status'
-      path: '/home/status'
-      fullPath: '/home/status'
-      preLoaderRoute: typeof HomeStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home/legal/$doc': {
-      id: '/home/legal/$doc'
-      path: '/home/legal/$doc'
-      fullPath: '/home/legal/$doc'
-      preLoaderRoute: typeof HomeLegalDocRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_marketing/legal/$doc': {
+      id: '/_marketing/legal/$doc'
+      path: '/legal/$doc'
+      fullPath: '/legal/$doc'
+      preLoaderRoute: typeof MarketingLegalDocRouteImport
+      parentRoute: typeof MarketingRoute
     }
   }
 }
+
+interface MarketingRouteChildren {
+  MarketingBrokersRoute: typeof MarketingBrokersRoute
+  MarketingHowItWorksRoute: typeof MarketingHowItWorksRoute
+  MarketingStatusRoute: typeof MarketingStatusRoute
+  MarketingIndexRoute: typeof MarketingIndexRoute
+  MarketingLegalDocRoute: typeof MarketingLegalDocRoute
+}
+
+const MarketingRouteChildren: MarketingRouteChildren = {
+  MarketingBrokersRoute: MarketingBrokersRoute,
+  MarketingHowItWorksRoute: MarketingHowItWorksRoute,
+  MarketingStatusRoute: MarketingStatusRoute,
+  MarketingIndexRoute: MarketingIndexRoute,
+  MarketingLegalDocRoute: MarketingLegalDocRoute,
+}
+
+const MarketingRouteWithChildren = MarketingRoute._addFileChildren(
+  MarketingRouteChildren,
+)
+
+interface AuthRouteChildren {
+  Auth2faRoute: typeof Auth2faRoute
+  AuthBrokerConnectRoute: typeof AuthBrokerConnectRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthOnboardRoute: typeof AuthOnboardRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthSigninRoute: typeof AuthSigninRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+  AuthVerifyOtpRoute: typeof AuthVerifyOtpRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  Auth2faRoute: Auth2faRoute,
+  AuthBrokerConnectRoute: AuthBrokerConnectRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthOnboardRoute: AuthOnboardRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthSigninRoute: AuthSigninRoute,
+  AuthSignupRoute: AuthSignupRoute,
+  AuthVerifyOtpRoute: AuthVerifyOtpRoute,
+  AuthIndexRoute: AuthIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface DashboardRouteChildren {
   DashboardAccountsRoute: typeof DashboardAccountsRoute
@@ -660,31 +745,10 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  MarketingRoute: MarketingRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
   DashboardRoute: DashboardRouteWithChildren,
-  Auth2faRoute: Auth2faRoute,
-  AuthBrokerConnectRoute: AuthBrokerConnectRoute,
-  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
-  AuthOnboardRoute: AuthOnboardRoute,
-  AuthResetPasswordRoute: AuthResetPasswordRoute,
-  AuthSigninRoute: AuthSigninRoute,
-  AuthSignupRoute: AuthSignupRoute,
-  AuthVerifyOtpRoute: AuthVerifyOtpRoute,
-  HomeBrokersRoute: HomeBrokersRoute,
-  HomeHowItWorksRoute: HomeHowItWorksRoute,
-  HomeStatusRoute: HomeStatusRoute,
-  HomeIndexRoute: HomeIndexRoute,
-  HomeLegalDocRoute: HomeLegalDocRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

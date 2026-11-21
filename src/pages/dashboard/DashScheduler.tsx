@@ -159,6 +159,7 @@ export function DashSchedulerPage() {
       {/* HEADER */}
       <PageHero
         icon={CalendarIcon}
+        art="scheduler"
         kicker="T-6 · TRADE SCHEDULER"
         titleId="os-sched-title"
         title="Trade Scheduler"

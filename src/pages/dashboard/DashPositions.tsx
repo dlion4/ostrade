@@ -687,6 +687,7 @@ export function DashPositionsPage() {
       {/* Page Header */}
       <PageHero
         icon={Layers}
+        art="positions"
         kicker="T-7 · CONSOLIDATED ORDER BOOK"
         titleId="os-pos-title"
         title={<>Positions <span className="os-hero-accent">&amp;</span> Orders</>}

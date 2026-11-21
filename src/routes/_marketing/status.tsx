@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StubPage } from "@/pages/home/Stub";
 
-export const Route = createFileRoute("/home/status")({
+export const Route = createFileRoute("/_marketing/status")({
   component: () => (
     <StubPage
       code="OPS"
